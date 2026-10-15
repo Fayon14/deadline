@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEADLINE: Freelance Dev Sim</title>
+<style>
+:root{
+  --bg:#0a0d14; --panel:#121826; --panel2:#0d1220; --line:#243049;
+  --ink:#dce6f8; --dim:#8ba0c4; --faint:#5b6c8f;
+  --acc:#5ef2a0; --acc2:#8f7bff; --warn:#ffb454; --bad:#ff6b6b; --gold:#ffd166; --blue:#6fb3ff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;overflow-x:hidden}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.btn{display:inline-block;padding:9px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-weight:600;letter-spacing:.02em;transition:all .15s ease;user-select:none}
+.btn:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:linear-gradient(135deg,#1d8f5c,#25b874);border-color:#2bd684;color:#04130b}
+.btn.primary:hover{color:#04130b;filter:brightness(1.12)}
+.btn.danger{border-color:#5c2b33;color:#ff9b9b}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 12px;font-size:13px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.hidden{display:none!important}
+
+/* ---------- intro ---------- */
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 120%,#152036 0%,#0a0d14 60%)}
+#introCanvas{position:absolute;inset:0;width:100%;height:100%}
+.intro-inner{position:relative;z-index:2;text-align:center;padding:20px;animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+#gameTitle{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(44px,9vw,86px);font-weight:800;letter-spacing:.14em;color:#fff;text-shadow:0 0 24px rgba(94,242,160,.45),0 0 70px rgba(143,123,255,.3);animation:flicker 4s infinite}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.6}94%{opacity:1}97%{opacity:.85}98%{opacity:1}}
+#gameSub{margin-top:6px;color:var(--dim);font-size:15px;letter-spacing:.34em;text-transform:uppercase}
+.intro-tag{margin:26px auto 34px;max-width:520px;color:var(--dim);font-size:15px;font-style:italic}
+.intro-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+#introStats{margin-top:22px;color:var(--faint);font-size:12.5px}
+.cursorblink{display:inline-block;width:10px;height:1.05em;background:var(--acc);vertical-align:text-bottom;animation:blink 1s steps(1) infinite;margin-left:6px}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- topbar ---------- */
+#game{min-height:100vh;display:flex;flex-direction:column}
+#topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:10px 18px;background:rgba(13,18,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+#logo{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.12em;color:var(--acc);font-size:17px}
+#logo span{color:var(--acc2)}
+.stat{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--dim);white-space:nowrap}
+.stat b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.minibar{width:74px;height:7px;border-radius:4px;background:#1a2334;overflow:hidden}
+.minibar i{display:block;height:100%;border-radius:4px;transition:width .4s ease}
+#energyFill{background:linear-gradient(90deg,#ff6b6b,#ffd166,#5ef2a0)}
+#stressFill{background:linear-gradient(90deg,#5ef2a0,#ffd166,#ff6b6b)}
+#dayInfo{margin-left:auto;text-align:right;font-size:12.5px;color:var(--dim)}
+#dayInfo b{color:var(--ink);font-size:14px}
+
+/* ---------- tabs ---------- */
+#tabs{display:flex;gap:4px;padding:8px 14px 0;flex-wrap:wrap}
+.tab{padding:9px 20px;border:1px solid transparent;border-bottom:none;border-radius:9px 9px 0 0;color:var(--dim);font-weight:600;font-size:14px;position:relative;transition:all .15s}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--acc);background:var(--panel);border-color:var(--line)}
+.tab .dot{position:absolute;top:7px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn)}
+main{flex:1;padding:16px 18px 30px;background:linear-gradient(180deg,var(--panel) 0%,var(--bg) 240px);min-height:60vh}
+.panel{max-width:1060px;margin:0 auto}
+h2.ph{font-size:19px;margin:2px 0 14px;letter-spacing:.02em}
+h2.ph small{color:var(--faint);font-weight:400;font-size:12.5px;margin-left:10px}
+
+/* ---------- cards ---------- */
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px;transition:border-color .2s}
+.card:hover{border-color:#334263}
+.card h3{font-size:16px;margin-bottom:4px}
+.meta{color:var(--dim);font-size:13px}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--dim);letter-spacing:.04em}
+.tag.good{color:var(--acc);border-color:#2a5c42}
+.tag.warn{color:var(--warn);border-color:#5c4a2b}
+.tag.bad{color:var(--bad);border-color:#5c2b33}
+.tag.info{color:var(--blue);border-color:#2b455c}
+.tag.gold{color:var(--gold);border-color:#5c522b}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pay{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+.dim{color:var(--dim)} .faint{color:var(--faint)} .green{color:var(--acc)} .red{color:var(--bad)} .amber{color:var(--warn)}
+.empty{padding:44px 20px;text-align:center;color:var(--faint);border:1px dashed var(--line);border-radius:12px;font-size:14px}
+
+/* ---------- bars & stars ---------- */
+.bar{height:10px;border-radius:6px;background:#1a2334;overflow:hidden;flex:1;min-width:80px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .35s ease}
+.fill-acc{background:linear-gradient(90deg,#1d8f5c,#5ef2a0)}
+.fill-warn{background:linear-gradient(90deg,#8f6b1d,#ffb454)}
+.fill-bad{background:linear-gradient(90deg,#7c2b33,#ff6b6b)}
+.fill-acc2{background:linear-gradient(90deg,#4a3d99,#8f7bff)}
+.stars{color:var(--gold);letter-spacing:2px;font-size:14px}
+.stars .off{color:#3a465f}
+
+/* ---------- lists ---------- */
+.invoice,.offer{position:relative}
+.badge{position:absolute;top:-1px;right:-1px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:0 12px 0 10px;font-weight:700}
+.badge.paid{background:#123b29;color:var(--acc)}
+.badge.due{background:#3b2f12;color:var(--warn)}
+.badge.late{background:#3b1219;color:var(--bad)}
+.badge.new{background:#251b45;color:var(--acc2)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.1em;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #1a2334}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- modal ---------- */
+#modalRoot{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(4,7,12,.78);backdrop-filter:blur(4px);padding:16px}
+#modalRoot.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;padding:22px 24px;animation:pop .22s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal h3{font-size:18px;margin-bottom:10px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.field{margin:12px 0}
+.field label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:5px}
+.field input[type=number],.field input[type=text],.field select,.field textarea{width:100%;padding:9px 12px;background:#0b0f1a;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:14px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--acc2)}
+.range{width:100%;accent-color:var(--acc)}
+.hint{font-size:12.5px;color:var(--faint);margin-top:4px}
+
+/* ---------- typing challenge ---------- */
+#tyTarget{background:#070a11;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:break-all;margin:10px 0;max-height:230px;overflow:auto}
+#tyTarget .done{color:var(--acc)}
+#tyTarget .cur{background:var(--acc2);color:#fff;border-radius:2px}
+#tyTarget .err{color:var(--bad);background:#3b1219;border-radius:2px}
+#tyInput{width:100%;min-height:120px;resize:vertical;background:#0b0f1a;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:10px 12px;outline:none}
+#tyInput:focus{border-color:var(--acc)}
+.tybar{display:flex;align-items:center;gap:12px;margin:8px 0}
+#tyTimer{flex:1;height:8px;border-radius:5px;background:#1a2334;overflow:hidden}
+#tyTimer i{display:block;height:100%;background:linear-gradient(90deg,#5ef2a0,#ffd166,#ff6b6b)}
+#tyStat{font-size:13px;color:var(--dim);white-space:nowrap}
+#tyStat b{color:var(--ink)}
+
+/* ---------- quiz ---------- */
+.quizopt{display:block;width:100%;text-align:left;padding:11px 14px;margin:7px 0;border:1px solid var(--line);border-radius:9px;background:#0b0f1a;font-size:13.5px;transition:all .15s}
+.quizopt:hover{border-color:var(--acc2)}
+.quizopt.right{border-color:var(--acc);color:var(--acc)}
+.quizopt.wrong{border-color:var(--bad);color:var(--bad)}
+.quizopt:disabled{cursor:default;opacity:.9}
+
+/* ---------- toasts & log ---------- */
+#toasts{position:fixed;bottom:18px;right:18px;z-index:70;display:flex;flex-direction:column;gap:9px;max-width:340px}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:11px 15px;font-size:13.5px;animation:tin .3s ease both;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.bad{border-left-color:var(--bad)}
+.toast.gold{border-left-color:var(--gold)}
+@keyframes tin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.toast.out{animation:tout .3s ease both}
+@keyframes tout{to{opacity:0;transform:translateX(30px)}}
+#logWrap{border-top:1px solid var(--line);padding:10px 18px 14px;background:var(--panel2)}
+#logWrap h4{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:6px}
+#log{max-height:130px;overflow-y:auto;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--dim)}
+#log .d{color:var(--faint);margin-right:8px}
+#log .good{color:var(--acc)} #log .bad{color:var(--bad)} #log .warn{color:var(--warn)} #log .gold{color:var(--gold)} #log .acc2{color:var(--acc2)}
+
+/* ---------- misc ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.avat{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#08131b;flex:none}
+.feat{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a2334}
+.feat:last-child{border-bottom:none}
+.feat .ic{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.feat.done .ic{background:#123b29;border-color:#2bd684;color:var(--acc)}
+.feat .nm{flex:1;font-size:13.5px}
+.feat .d{font-size:11px;color:var(--faint)}
+.scrollY{max-height:420px;overflow-y:auto}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}#topbar{gap:10px}.minibar{width:52px}.day-actions{width:100%}}
+.day-actions{display:flex;gap:8px;align-items:center}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#26314a;border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div id="intro">
+  <canvas id="introCanvas"></canvas>
+  <div class="intro-inner">
+    <div id="gameTitle">DEADLINE</div>
+    <div id="gameSub">freelance dev simulator</div>
+    <div class="intro-tag">Find clients. Build the thing. Send the invoice. Wait.<br>And whatever you do, don't miss the deadline.</div>
+    <div class="intro-btns">
+      <button class="btn primary" id="btnNew" style="font-size:16px;padding:12px 30px">New Game</button>
+      <button class="btn hidden" id="btnContinue" style="font-size:16px;padding:12px 30px">Continue</button>
+    </div>
+    <div id="introStats" class="mono"></div>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <header id="topbar">
+    <div id="logo">DEAD<span>LINE</span></div>
+    <div class="stat"><span class="lbl">Cash</span><b id="stCash">$0</b></div>
+    <div class="stat"><span class="lbl">Energy</span><div class="minibar"><i id="energyFill"></i></div><b id="stEnergy">100</b></div>
+    <div class="stat"><span class="lbl">Stress</span><div class="minibar"><i id="stressFill"></i></div><b id="stStress">0</b></div>
+    <div class="stat"><span class="lbl">Rep</span><span class="stars" id="stRep"></span><b id="stRepN"></b></div>
+    <div id="dayInfo"><b id="stDay">Day 1</b> <span id="stWk">Mon</span><br><span id="stDate"></span></div>
+    <div class="day-actions">
+      <button class="btn sm" id="btnShop">Gear</button>
+      <button class="btn sm primary" id="btnSleep">Sleep ▸</button>
+    </div>
+  </header>
+  <nav id="tabs">
+    <button class="tab on" data-tab="inbox">Inbox<span class="dot hidden" id="dotInbox"></span></button>
+    <button class="tab" data-tab="project">Project<span class="dot hidden" id="dotProject"></span></button>
+    <button class="tab" data-tab="clients">Clients</button>
+    <button class="tab" data-tab="money">Money<span class="dot hidden" id="dotMoney"></span></button>
+    <button class="tab" data-tab="you">You</button>
+  </nav>
+  <main><div class="panel">
+    <section id="tab-inbox"></section>
+    <section id="tab-project" class="hidden"></section>
+    <section id="tab-clients" class="hidden"></section>
+    <section id="tab-money" class="hidden"></section>
+    <section id="tab-you" class="hidden"></section>
+  </div></main>
+  <div id="logWrap"><h4>Terminal</h4><div id="log"></div></div>
+</div>
+
+<div id="modalRoot"><div class="modal" id="modalBox"></div></div>
+<div id="toasts"></div>
+<script>
+"use strict";
+/* ============================== DEADLINE ==============================
+   A freelance software developer life simulator.
+   Single file. No external assets. localStorage save.
+   ===================================================================== */
+
+/* ---------- tiny utils ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rndi=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt$=n=>(n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+let uidc=1; const nid=()=>uidc++;
+const WEEK=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ---------- audio ---------- */
+let AC=null;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}} return AC; }
+function beep(f,d,type,vol){
+  const c=ac(); if(!c) return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||"sine"; o.frequency.value=f;
+    g.gain.setValueAtTime(vol||.08,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+(d||.15));
+    o.connect(g);g.connect(c.destination);
+    o.start();o.stop(c.currentTime+(d||.15));
+  }catch(e){}
+}
+const SFX={
+  click:()=>beep(660,.06,"square",.04),
+  type:()=>beep(880+rnd(-120,120),.03,"square",.015),
+  good:()=>{beep(523,.09,"sine",.07);setTimeout(()=>beep(784,.14,"sine",.07),90)},
+  cash:()=>{beep(880,.08,"triangle",.08);setTimeout(()=>beep(1318,.18,"triangle",.08),80)},
+  bad:()=>beep(160,.25,"sawtooth",.07),
+  warn:()=>beep(320,.15,"sine",.06),
+  levelup:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle",.06),i*90))},
+};
+
+/* ---------- data tables ---------- */
+const SKILLS=["frontend","backend","design","devops","comms"];
+const SKILL_LABEL={frontend:"Frontend",backend:"Backend",design:"Design",devops:"DevOps",comms:"Communication"};
+const xpNeed=l=>l*90;
+
+const FIRST=["Maya","Dario","Priya","Tom","Elena","Marcus","Yuki","Sofia","Jamal","Ingrid","Ravi","Chloe","Omar","Nadia","Felix","Grace","Hugo","Leila","Ben","Zoe","Andre","Carmen","Pete","Wen","Sasha","Iris","Diego","Maren","Kofi","Rosa"];
+const LAST=["Okafor","Lindqvist","Marchetti","Osei","Kowalski","Reyes","Nakamura","Delgado","Bergstrom","Fontaine","Adeyemi","Novak","Silva","Haddad","Keller","Moreau","Tanaka","Weiss","Costa","Iversen","Mensah","Rossi","Vidal","Chen","Bauer","Duarte","Aliyev","Novotna","Laurent","Petrov"];
+const INDUSTRIES=[
+  {n:"coffee roastery",co:["Beanline","Ember Roast","Foglifter","SlowPour","Crema Lab"]},
+  {n:"law firm",co:["Aldrich & Sons","Marlowe Legal","Vance Partners","Corbin Group"]},
+  {n:"gym chain",co:["Ironbound","RepHouse","FormCity","Kettle & Co"]},
+  {n:"indie game studio",co:["Pixel Wren","Hexlight","Paperwolf","Nine Door Games"]},
+  {n:"landscaping company",co:["GreenStride","Mowtown","Verdant Bros","Cloverline"]},
+  {n:"bakery",co:["Flour & Ember","Crumbcraft","The Warm Loaf","Doughlight"]},
+  {n:"veterinary clinic",co:["Pawpoint","Brightwhisker Vet","Four Paws Clinic","Furwell"]},
+  {n:"real estate agency",co:["Keystone Realty","Hearthome","Ridgeview Estates","Lockbox Group"]},
+  {n:"yoga studio",co:["Stillpoint","Lotus Rise","Breathline","Studio Nimbus"]},
+  {n:"food truck",co:["Curbside Kitchen","The Rolling Stove","Taco Odyssey","Smokewagon"]},
+  {n:"dentist office",co:["Molar & Co","Brightbite Dental","Enamel Works","Fairview Dental"]},
+  {n:"used bookstore",co:["Dog-Eared","Marginalia","Second Spine","The Read Shelf"]},
+  {n:"auto repair shop",co:["Torque Bros","Rustbelt Garage","Precision Motor","Camshaft & Co"]},
+  {n:"nonprofits",co:["Bright Futures Fund","Harbor Relief","City Roots","Open Table Org"]},
+  {n:"barbershop",co:["Fade Factory","The Sharp Edge","Classic Cuts Co","Blade & Bone"]},
+  {n:"photography studio",co:["Aperture North","Golden Hour Co","Frame Nine","Shutterline"]},
+  {n:"pest control",co:["BugOut Solutions","Critter Line","SafeNest Pest","Zero Vermin"]},
+  {n:"catering company",co:["Plate & Post","Saffron Route","The Long Table","Saltcellar"]},
+];
+const PERSONALITIES=[
+  {id:"chill",label:"Chill",pay:1.0,speed:1.0,picky:0,blurb:"Easy to work with, pays roughly on time."},
+  {id:"picky",label:"Picky",pay:1.1,speed:1.05,picky:2,blurb:"High standards. Revisions happen."},
+  {id:"micromanager",label:"Micromanager",pay:1.05,speed:0.9,picky:1,blurb:"Messages you constantly. Stressful."},
+  {id:"ghosty",label:"Ghosty",pay:1.0,speed:0.85,picky:0,late:1.4,blurb:"Slow to reply, slower to pay."},
+  {id:"generous",label:"Generous",pay:1.25,speed:1.0,picky:0,tip:.5,blurb:"Pays well and tips on delivery."},
+  {id:"cheap",label:"Cheap",pay:0.72,speed:1.15,picky:1,blurb:"Haggles hard. Work must be fast."},
+  {id:"late",label:"Late Payer",pay:1.05,speed:1.0,picky:0,late:1.9,blurb:"Good work, bad bookkeeping."},
+  {id:"vip",label:"Serious Client",pay:1.45,speed:0.95,picky:1,blurb:"Big company. Big expectations."},
+];
+/* job categories: the work you actually get asked to do */
+const CATEGORIES=[
+  {id:"website",name:"Marketing website",blurb:"A small business site that actually loads fast.",sk:{frontend:1,design:1},pay:[900,2600],days:[5,9],diff:[1,3],
+    feats:["Landing page layout","Contact form + validation","Mobile responsiveness","SEO meta + sitemap","Analytics hookup"]},
+  {id:"store",name:"Online store",blurb:"Products, cart, checkout, the whole dance.",sk:{frontend:2,backend:1},pay:[1800,5200],days:[8,14],diff:[2,4],
+    feats:["Product catalog","Cart system","Checkout flow","Admin order view","Inventory tracking"]},
+  {id:"booking",name:"Booking system",blurb:"Clients book appointments, no phone tag.",sk:{backend:2,frontend:1},pay:[1600,4400],days:[7,12],diff:[2,4],
+    feats:["Calendar availability engine","Booking form","Email confirmations","Admin dashboard","Cancellation logic"]},
+  {id:"api",name:"API integration",blurb:"Wire two systems together and make it stick.",sk:{backend:3},pay:[1200,3800],days:[5,9],diff:[2,5],
+    feats:["Auth handshake","Data mapping layer","Retry + error handling","Rate limit backoff","Integration tests"]},
+  {id:"migration",name:"Database migration",blurb:"Old data out, new schema in, nothing lost.",sk:{backend:3,devops:1},pay:[2000,5600],days:[6,10],diff:[3,5],
+    feats:["Schema mapping plan","Extract + transform script","Dry-run validation","Live cutover","Rollback safety net"]},
+  {id:"dashboard",name:"Analytics dashboard",blurb:"Charts executives can nod at.",sk:{frontend:2,backend:2},pay:[2200,6200],days:[8,13],diff:[2,5],
+    feats:["Data pipeline","Chart components","Filters + date ranges","CSV export","Auth + roles"]},
+  {id:"bugfix",name:"Emergency bugfix",blurb:"Something is on fire and it is not your fault.",sk:{backend:2,devops:1},pay:[500,1600],days:[2,4],diff:[1,3],
+    feats:["Reproduce the crash","Find root cause","Ship the patch","Write regression test"]},
+  {id:"automation",name:"Automation script",blurb:"Kill a spreadsheet somebody hates.",sk:{backend:2,devops:2},pay:[700,2200],days:[4,7],diff:[1,3],
+    feats:["Input parsing","Task engine","Scheduled runs","Failure alerts","Run log"]},
+  {id:"redesign",name:"App redesign",blurb:"New skin, same bones. Designers weep quietly.",sk:{design:3,frontend:2},pay:[1800,5000],days:[7,11],diff:[2,4],
+    feats:["Design system tokens","Component restyle","Dark mode","Motion polish","Old-route redirects"]},
+  {id:"gameproto",name:"Game prototype",blurb:"A playable slice to show investors.",sk:{frontend:3,design:2},pay:[2000,6000],days:[7,12],diff:[3,5],
+    feats:["Core loop prototype","Art style pass","Juice + feedback","Menu flow","Build pipeline"]},
+  {id:"mobile",name:"Mobile app MVP",blurb:"Tiny app, giant expectations.",sk:{frontend:3,backend:1},pay:[3000,8000],days:[10,16],diff:[3,5],
+    feats:["Auth + profiles","Core screens","Push notifications","Offline cache","App store prep"]},
+  {id:"devops",name:"Infra rescue",blurb:"Their server is held together with hope.",sk:{devops:3,backend:2},pay:[1600,4800],days:[4,8],diff:[3,5],
+    feats:["Server audit","CI/CD setup","Monitoring + alerts","Backup automation","Cost optimization"]},
+];
+const COMPANIES_SUFFIX=["LLC","Inc","Group","Studio","Collective","Co.","Works","Labs"];
+const COMPANY_PREFIX=["North","Bright","Cedar","Atlas","Foxglove","Harbor","Quartz","Lumen","Cobalt","Wren","Anchor","Summit","Willow","Onyx","Fable","Juniper","Kestrel","Marble"];
+const PERSONALITY_TITLES={chill:"Chill",picky:"Picky",micromanager:"Micromanager",ghosty:"Ghosty",generous:"Generous",cheap:"Cheap",late:"Late payer",vip:"Serious client"};
+
+/* typing snippets: what you "write" in work sessions */
+const SNIPPETS=[
+ ["const orders = await db.query('SELECT * FROM orders WHERE status = $1', ['open']);","return orders.filter(o => o.total > 0).map(o => ({ id: o.id, total: o.total }));"],
+ ["function debounce(fn, ms) {","  let t;  return (...args) => {    clearTimeout(t);    t = setTimeout(() => fn(...args), ms);  };","}"],
+ ["app.get('/api/invoices/:id', auth, async (req, res) => {","  const inv = await Invoice.findById(req.params.id);","  if (!inv) return res.status(404).json({ error: 'not found' });","  res.json(inv);","});"],
+ ["export default function Button({ children, onClick, variant = 'primary' }) {","  return <button className={`btn ${variant}`} onClick={onClick}>{children}</button>;","}"],
+ ["try {","  const data = JSON.parse(fs.readFileSync(path, 'utf8'));","  console.log('loaded', data.length, 'records');","} catch (err) {","  console.error('parse failed:', err.message);","}"],
+ ["const [state, setState] = useState({ loading: true, rows: [] });","useEffect(() => { fetch('/api/rows').then(r => r.json()).then(rows => setState({ loading: false, rows })); }, []);"],
+ ["CREATE TABLE clients (","  id SERIAL PRIMARY KEY,","  name TEXT NOT NULL,","  email TEXT UNIQUE,","  created_at TIMESTAMPTZ DEFAULT now()",");"],
+ ["ssh deploy@prod 'cd /srv/app && git pull && npm ci --production && pm2 reload all'"],
+ ["def reconcile(payments, invoices):","    matched = [p for p in payments if p.ref in invoices]","    unmatched = [p for p in payments if p.ref not in invoices]","    return matched, unmatched"],
+ ["@media (max-width: 760px) {","  .sidebar { display: none; }","  .content { padding: 12px; }","}"],
+ ["git rebase -i HEAD~3  # squash the fixup commits before pushing"],
+ ["docker compose up -d --build && ./scripts/wait_healthy.sh api 8080"],
+ ["async function retry(fn, times = 3) {","  for (let i = 0; i < times; i++) {","    try { return await fn(); } catch (e) { if (i === times - 1) throw e; await sleep(300 * 2 ** i); }","  }","}"],
+ ["input:focus { outline: none; border-color: #5ef2a0; box-shadow: 0 0 0 3px rgba(94,242,160,.2); }"],
+ ["SELECT c.name, COUNT(b.id) AS bookings","FROM clients c LEFT JOIN bookings b ON b.client_id = c.id","GROUP BY c.name ORDER BY bookings DESC;"],
+ ["const cache = new Map();","function memo(key, fn) { if (!cache.has(key)) cache.set(key, fn()); return cache.get(key); }"],
+ ["page.on('console', msg => { if (msg.type() === 'error') failures.push(msg.text()); });"],
+];
+/* bugfix quizzes: pick the right fix */
+const BUGQUIZ=[
+  {q:"TypeError: Cannot read property 'map' of undefined",o:["Guard the data before mapping: rows?.map(...)","Wrap it in try/catch and move on","Delete the map call entirely"]},
+  {q:"Checkout button fires twice, double charges appear",o:["Disable the button until the request resolves","Add a second loading spinner to slow users down","Increase the server timeout"]},
+  {q:"Memory keeps climbing until the tab crashes",o:["An event listener is being re-added every render; remove it on cleanup","Buy the client more RAM","Restart the server every hour on a cron"]},
+  {q:"CSS: the modal renders behind the header on iOS Safari",o:["The stacking context is broken; give the modal a higher z-index in its own layer","Tell users to rotate their phone","Set overflow:hidden on body and hope"]},
+  {q:"API returns 500 only for users with more than 100 records",o:["The query has no LIMIT and times out; paginate it","Ban users with more than 100 records","Retry the same request in a loop"]},
+  {q:"Form submits on Enter before validation runs",o:["Handle the submit event and validate before the request","Remove the Enter key support","Validate after the request finishes"]},
+  {q:"Timezone bug: appointments booked for 3pm show at 11am",o:["Store timestamps in UTC and convert on display","Ask every client their timezone by email","Round all times to the hour"]},
+  {q:"Images look blurry on the new 4K screens",o:["Serve 2x resolution assets with srcset","Stretch the images with CSS","Tell users their screen is broken"]},
+  {q:"Webhook retries create duplicate orders",o:["Make the handler idempotent with a dedupe key on event id","Turn off retries at the provider","Delete duplicate orders manually each morning"]},
+  {q:"Build passes locally, fails in CI with missing module",o:["A dev dependency is missing from the lockfile; regenerate and commit it","Add sudo to the CI config","Copy node_modules into the repo"]},
+];
+const REVIEWS_POS=["Shipped early and it just works. Hiring again.","Best contractor we've worked with, period.","Clean code, clear updates, no surprises.","Fixed stuff we didn't even know was broken.","Under budget and over delivered."];
+const REVIEWS_MID=["Solid work. A few rough edges.","Got the job done.","Fine overall. Communication could be tighter.","Delivered. Mostly on time."];
+const REVIEWS_NEG=["Missed the deadline and it cost us a launch.","Buggy on delivery. Had to chase fixes.","Disappeared for days mid-project.","Overpromised and underdelivered."];
+const EVENTS_POOL=["scope","ghost","laptop","referral","recruiter","inspired","sick","coffee","taxnote","reviewbomb","discountseeker","portfoliolove"];
+
+/* gear shop */
+const GEAR=[
+  {id:"laptop2",name:"Refurb laptop",cost:1400,desc:"+15% progress per session.",req:null},
+  {id:"laptop3",name:"Beefy laptop",cost:3600,desc:"+30% progress per session. Requires refurb laptop.",req:"laptop2"},
+  {id:"monitor",name:"Second monitor",cost:450,desc:"-10% bug chance.",req:null},
+  {id:"chair",name:"Ergonomic chair",cost:700,desc:"Sleep restores +15 extra energy.",req:null},
+  {id:"desklamp",name:"Proper desk lamp",cost:120,desc:"+1 quality on delivery.",req:null},
+  {id:"keyboard",name:"Mechanical keyboard",cost:250,desc:"Typing challenges get 4 more seconds.",req:null},
+  {id:"coffeemachine",name:"Espresso machine",cost:900,desc:"Coffee costs half as much.",req:null},
+  {id:"ups",name:"Battery backup",cost:600,desc:"Laptop failure events can't take a whole day.",req:null},
+];
+const RENT=1150, UTILITIES=180, INTERNET=80, INSURANCE=240, TAX_RATE=0.18, QUARTER_DAYS=90, MONTH_DAYS=30;
+/* ---------- state ---------- */
+const SAVE_KEY="deadline_save_v2";
+let S=null;
+
+function freshState(){
+  return {
+    v:2, day:1, cash:3200, energy:100, stress:5,
+    rep:3.1, repCount:0,
+    skills:{frontend:1,backend:1,design:1,devops:1,comms:1},
+    xp:{frontend:0,backend:0,design:0,devops:0,comms:0},
+    clients:[], offers:[], project:null,
+    invoices:[], ledger:[], log:[], reviews:[],
+    gear:{}, incomeQuarter:0, incomeLastQ:0, totalEarned:0, projectsDone:0,
+    inspired:false, skipWork:false, machineBroken:false, flags:{}, lastOfferDay:0,
+  };
+}
+
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(!r) return false; S=JSON.parse(r); return !!S; }catch(e){ return false; } }
+function hasSave(){ try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } }
+function wipeSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+/* ---------- ledger / log ---------- */
+function ledger(kind, amount, note){
+  S.ledger.push({d:S.day, kind, amount:Math.round(amount), note});
+  if(S.ledger.length>400) S.ledger.splice(0,S.ledger.length-400);
+}
+function log(text, cls){
+  S.log.unshift({d:S.day, t:text, c:cls||""});
+  if(S.log.length>120) S.log.length=120;
+}
+function toast(text, cls, ms){
+  const t=document.createElement("div");
+  t.className="toast "+(cls||"");
+  t.innerHTML=esc(text);
+  $("#toasts").appendChild(t);
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),320); }, ms||3800);
+}
+function money(delta, note, kind){
+  S.cash+=delta;
+  ledger(kind||(delta>=0?"income":"expense"), delta, note);
+}
+
+/* ---------- date helpers (30 day months, day 1 = Monday Jan 1) ---------- */
+function dayParts(d){
+  const m=Math.floor((d-1)/30), dom=((d-1)%30)+1, dow=(d-1)%7;
+  return {month:MONTHS[m%12], dom, dow:WEEK[dow], year:1+Math.floor(m/12), monthN:m%12};
+}
+function dateStr(d){ const p=dayParts(d); return p.month+" "+p.dom+", Year "+p.year; }
+
+/* ---------- clients ----------
+   Uniqueness rules (Stephen's hard requirements):
+   1. No two clients share a name or company, ever.
+   2. A client never holds two jobs at once (an active project or an open offer blocks new ones).
+   3. A returning client never gets the same task category twice. */
+function makeClient(){
+  let name="", co="", tries=0;
+  do{
+    name=pick(FIRST)+" "+pick(LAST);
+    const ind=pick(INDUSTRIES);
+    const base=chance(.6)?pick(ind.co):pick(COMPANY_PREFIX)+" "+pick(["& Sons","Collective","Works","Group","Studio","Co."]);
+    co=base+(chance(.35)?" "+pick(COMPANIES_SUFFIX):"");
+    tries++;
+  }while(tries<90 && (S.clients.some(c=>c.name===name) || S.clients.some(c=>c.company===co)));
+  const pers=pick(PERSONALITIES);
+  const ind=INDUSTRIES.find(i=>i.co.some(x=>co.startsWith(x.split(" ")[0])))||pick(INDUSTRIES);
+  const c={
+    id:nid(), name, company:co, industry:ind.n, pers:pers.id,
+    netDays:{generous:7,chill:14,picky:14,micromanager:14,ghosty:30,cheap:30,late:30,vip:45}[pers.id]||14,
+    lateMult:pers.late||1, tip:pers.tip||0, picky:pers.picky||0,
+    budgetMult:rnd(.85,1.2)*(pers.pay||1),
+    goodwill:60, history:[], projects:0, earned:0,
+  };
+  S.clients.push(c);
+  return c;
+}
+function clientBusy(c){
+  if(S.project && S.project.client.id===c.id) return true;
+  if(S.offers.some(o=>o.client.id===c.id)) return true;
+  return false;
+}
+function pickOfferClient(){
+  // 35% chance a returning client comes back, with a brand new task category
+  const roster=S.clients.filter(c=>!clientBusy(c));
+  if(roster.length && chance(.35)){
+    const c=pick(roster);
+    const fresh=CATEGORIES.filter(cat=>!c.history.includes(cat.id));
+    if(fresh.length) return {c, cat:weightedCat(fresh)};
+  }
+  const c=makeClient();
+  return {c, cat:weightedCat(CATEGORIES)};
+}
+function weightedCat(pool){
+  // cheap categories show up more early on; big ones need reputation
+  const rep=S.rep;
+  const w=pool.map(cat=>{
+    let x=1;
+    if(cat.id==="mobile"||cat.id==="dashboard"||cat.id==="gameproto") x = rep>=3.8?1.2:0.35;
+    if(cat.id==="bugfix"||cat.id==="automation"||cat.id==="website") x=1.5;
+    return x;
+  });
+  let total=w.reduce((a,b)=>a+b,0), r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){ r-=w[i]; if(r<=0) return pool[i]; }
+  return pool[pool.length-1];
+}
+const CAT_FLAVOR={
+  website:["needs a site that doesn't look like 2009","wants a website before their rival launches one","finally agreed they need a real website"],
+  store:["wants to sell online instead of the farmers market","is losing orders to a competitor with a shop","needs a store live before the holiday rush"],
+  booking:["is tired of scheduling by text message","lost a client to a double-booking","wants clients to book themselves"],
+  api:["needs two systems to stop fighting each other","was promised an integration by a vendor who vanished","wants their data flowing between tools"],
+  migration:["is migrating off a system held together with duct tape","outgrew their spreadsheet and knows it","needs the old data moved before the license dies"],
+  dashboard:["wants charts for a board meeting that keeps getting moved","is drowning in exports and wants one screen","wants their numbers to look as good as they claim"],
+  bugfix:["has a production fire and your name came up","lost a weekend to this bug already","needs this fixed before Monday, or else"],
+  automation:["wants to stop paying someone to copy-paste","found you on a forum where you fixed something similar","has a spreadsheet nobody loves"],
+  redesign:["thinks their app looks dated and they're right","lost customers who said the app felt old","got funding and wants to look the part"],
+  gameproto:["needs a playable slice for an investor meeting","has a game idea and no coder","wants to test the concept before committing"],
+  mobile:["wants an app because their competitor has one","needs a simple app to test the market","got told by a customer 'there should be an app for this'"],
+  devops:["had an outage and never wants another","is paying three humans to deploy by hand","needs someone to own their infrastructure"],
+};
+function genOffer(silent){
+  const {c, cat}=pickOfferClient();
+  const diff=rnd(cat.diff[0],cat.diff[1]);
+  const skillFit=avgSkillFit(cat);
+  const base=rnd(cat.pay[0],cat.pay[1]);
+  const ask=Math.round(base*(c.pers==="vip"?1.25+S.rep*0.04:1)*(1+(skillFit-2)*0.04)/10)*10;
+  const featCount=clamp(Math.round(rnd(3.4,5.6)+diff*0.4),3,6);
+  const feats=shuffle([...cat.feats]).slice(0,featCount).map(nm=>({name:nm,done:0,seedDiff:clamp(Math.round(diff*rnd(.7,1.3)),1,6)}));
+  const off={
+    id:nid(), client:c, catId:cat.id, catName:cat.name, blurb:cat.blurb,
+    title:cat.name+" for "+c.company,
+    brief:c.name.split(" ")[0]+" from "+c.company+" ("+c.industry+") "+pick(CAT_FLAVOR[cat.id])+".",
+    ask, days:rndi(cat.days[0],cat.days[1]), diff:Math.round(diff*10)/10, feats,
+    createdDay:S.day,
+    pers:c.pers,
+    req:cat.sk,
+  };
+  S.offers.push(off);
+  S.lastOfferDay=S.day;
+  if(!silent){ log("New offer: "+cat.name+" from "+c.company+" ("+fmt$(ask)+")","gold"); SFX.warn(); }
+  return off;
+}
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function avgSkillFit(cat){
+  const ks=Object.keys(cat.sk||{});
+  if(!ks.length) return 3;
+  return ks.reduce((a,k)=>a+S.skills[k],0)/ks.length;
+}
+function eligible(off){
+  // skills gate: hard requirement check with a little slack
+  return Object.keys(off.req||{}).every(k=>S.skills[k]>=Math.max(1,off.req[k]-1));
+}
+
+/* ---------- negotiation ---------- */
+function quoteVerdict(offer, amount){
+  const budget=Math.round(offer.ask*(offer.client.budgetMult/ (PERSONALITIES.find(p=>p.id===offer.client.pers).pay||1)));
+  const comms=S.skills.comms;
+  const flex=1+comms*0.02;
+  if(amount<=budget*flex*1.02) return {ok:true, kind:"accept"};
+  if(amount<=budget*flex*1.32 && offer.client.pers!=="cheap") return {ok:true, kind:"counter", counter:Math.round(budget*flex/10)*10};
+  return {ok:false, kind:"decline"};
+}
+/* ---------- economy: invoices, bills, taxes ---------- */
+function issueInvoice(client, amount, netDays, note){
+  const inv={id:nid(), clientId:client.id, clientName:client.name, company:client.company,
+    amount:Math.round(amount), issued:S.day, due:S.day+netDays, status:"due", paid:0, nags:0, ghost:false, note:note||""};
+  S.invoices.push(inv);
+  log("Invoice sent to "+client.company+": "+fmt$(amount)+" (net "+netDays+")","acc2");
+  return inv;
+}
+function clientById(id){ return S.clients.find(c=>c.id===id); }
+function invoicePayChance(inv){
+  const c=clientById(inv.clientId); if(!c) return .6;
+  let base=.42;
+  if(c.pers==="generous") base=.75;
+  if(c.pers==="vip") base=.6;
+  if(c.pers==="ghosty") base=.22;
+  if(c.pers==="late") base=.25;
+  base*=c.lateMult>1.5?0.8:1;
+  if(inv.nags>0) base+=.18*inv.nags;
+  if(c.goodwill>75) base+=.08;
+  if(c.goodwill<35) base-=.1;
+  return clamp(base,0.08,0.95);
+}
+function tickInvoices(){
+  for(const inv of S.invoices){
+    if(inv.status!=="due") continue;
+    if(inv.due>S.day) continue;
+    const c=clientById(inv.clientId);
+    const payP=invoicePayChance(inv)*(inv.ghost?(inv.nags>0?0.5:0):1);
+    if(Math.random()<payP){
+      const late=inv.due<S.day;
+      inv.status="paid"; inv.paid=S.day;
+      money(inv.amount, "Payment: "+inv.company, "income");
+      S.incomeQuarter+=inv.amount; S.totalEarned+=inv.amount;
+      if(c){ c.earned+=inv.amount; c.goodwill=clamp(c.goodwill+4,0,100); }
+      SFX.cash();
+      toast("Payment received: "+fmt$(inv.amount)+" from "+inv.company+(late?" (late)":""),"gold");
+      log("PAID "+fmt$(inv.amount)+" <- "+inv.company+(late?" (late)":""),"gold");
+    } else if(!inv.ghost && chance(.03)){
+      inv.ghost=true;
+      log(inv.company+" has gone quiet about their invoice...","bad");
+      toast("Ghosted: "+inv.company+" stopped responding about "+fmt$(inv.amount),"bad");
+    } else {
+      if(inv.due===S.day){ log("Invoice past due: "+inv.company+" ("+fmt$(inv.amount)+")","warn"); }
+    }
+  }
+}
+function nagInvoice(id){
+  const inv=S.invoices.find(i=>i.id===id); if(!inv||inv.status!=="due") return;
+  const c=clientById(inv.clientId);
+  inv.nags++;
+  SFX.click();
+  if(c && (c.pers==="picky"||c.pers==="vip") && chance(.3)){
+    c.goodwill=clamp(c.goodwill-8,0,100);
+    toast(c.name+" seemed annoyed by the reminder.","warn");
+    log("Nagged "+inv.company+". They did not love it.","warn");
+  } else {
+    toast("Reminder sent to "+inv.company+".","good");
+    log("Nagged "+inv.company+" about "+fmt$(inv.amount),"acc2");
+  }
+}
+function writeOffInvoice(id){
+  const inv=S.invoices.find(i=>i.id===id); if(!inv||inv.status!=="due") return;
+  inv.status="written";
+  const c=clientById(inv.clientId);
+  if(c) c.goodwill=clamp(c.goodwill-15,0,100);
+  log("Wrote off "+fmt$(inv.amount)+" from "+inv.company+". Painful lesson.","bad");
+  toast("Wrote off "+fmt$(inv.amount)+". Some clients teach expensive lessons.","bad");
+}
+function monthStartDay(d){ return (d-1)%MONTH_DAYS===0; }
+function tickBills(){
+  const p=dayParts(S.day);
+  if(p.dom===1){
+    money(-RENT,"Rent","expense"); log("Rent paid: "+fmt$(-RENT),"bad");
+    money(-UTILITIES,"Utilities","expense");
+    money(-INTERNET,"Internet","expense");
+    if(S.gear.laptop2||S.gear.laptop3) money(-25,"Gear insurance","expense");
+    toast("Bills paid: rent, utilities, internet ("+fmt$(-(RENT+UTILITIES+INTERNET))+")","warn");
+  }
+  if(p.dom===15){
+    money(-INSURANCE,"Health insurance premium","expense");
+    log("Health insurance: "+fmt$(-INSURANCE),"bad");
+  }
+  if((S.day-1)%QUARTER_DAYS===0 && S.day>1){
+    const tax=Math.round(S.incomeQuarter*TAX_RATE);
+    S.incomeLastQ=S.incomeQuarter; S.incomeQuarter=0;
+    if(tax>0){
+      money(-tax,"Quarterly taxes","expense");
+      log("Quarterly taxes paid: "+fmt$(-tax),"bad");
+      toast("Quarterly tax bill: "+fmt$(tax)+" gone.","warn");
+    }
+  }
+}
+/* ---------- energy / daily rhythm ---------- */
+const SESSION_COST=22;
+function maxSessionsToday(){ return S.skipWork?0:3; }
+function sessionsLeftToday(){ return S.project?clamp(maxSessionsToday()-(S.project.sessionsToday||0),0,3):0; }
+function sleepNight(){
+  let rec=58+(S.gear.chair?15:0);
+  S.energy=clamp(S.energy+rec,0,100);
+  S.stress=clamp(S.stress-9,0,100);
+  S.skipWork=false;
+  if(S.inspired){ /* inspiration carries into the next day's first session */ }
+}
+function spendEnergy(n){ S.energy=clamp(S.energy-n,0,100); }
+function addStress(n){ S.stress=clamp(S.stress+n,0,100); }
+function buyCoffee(){
+  const cost=S.gear.coffeemachine?3:6;
+  if(S.cash<cost){ toast("Not enough cash for coffee.","bad"); SFX.bad(); return; }
+  money(-cost,"Coffee","expense");
+  S.energy=clamp(S.energy+14,0,100);
+  addStress(2);
+  SFX.good();
+  toast("Coffee. Energy up, nerves slightly worse.","good");
+  renderTop();
+}
+function checkBroke(){
+  if(S.cash<-2000){ gameOver("Your landlord finally ran out of patience. Evicted, laptop sold, career on pause."); return true; }
+  if(S.cash<0 && (S.day-1)%MONTH_DAYS===0 && !S.flags.overdraftWarned){
+    S.flags.overdraftWarned=true;
+    toast("Your account is negative. The bank charges $35 for the privilege.","bad");
+    money(-35,"Overdraft fee","expense");
+  }
+  return false;
+}
+/* ---------- active project ---------- */
+function P(){ return S.project; }
+function acceptOffer(offId){
+  const off=S.offers.find(o=>o.id===offId); if(!off) return;
+  openNegotiation(off);
+}
+function startProject(off, quote, depositAgreed, depositPaid){
+  const cat=CATEGORIES.find(c=>c.id===off.catId);
+  S.offers=S.offers.filter(o=>o.id!==off.id);
+  off.client.history.push(off.catId);
+  S.project={
+    offer:off, client:off.client, quote, depositAgreed, depositPaid,
+    features:off.feats.map(f=>({name:f.name, diff:f.seedDiff, prog:0, done:false})),
+    hiddenBugs:0, bugs:[], phase:"dev", startedDay:S.day, sessionsToday:0,
+    qualityScore:0, late:false,
+  };
+  // record the task fingerprint so this client can never ask for it again
+  if(depositPaid>0){ money(depositPaid,"Deposit: "+off.client.company,"income"); S.incomeQuarter+=depositPaid; S.totalEarned+=depositPaid; off.client.earned+=depositPaid; SFX.cash(); }
+  log("Contract signed: "+off.title+" at "+fmt$(quote)+(depositAgreed?" (30% deposit in)":""),"good");
+  toast("Contract signed. "+fmt$(quote)+(depositAgreed?", "+fmt$(depositPaid)+" deposited upfront":""));
+  switchTab("project");
+  renderAll();
+}
+function skillOf(k){ return S.skills[k]||1; }
+function laptopBonus(){ return S.gear.laptop3?0.30:(S.gear.laptop2?0.15:0); }
+function bugChance(feat){
+  let c=feat.diff*0.045 + S.stress*0.004 + Math.max(0,(feat.diff-skillOf("backend")))*0.03;
+  if(S.energy<25) c+=0.08;
+  if(S.gear.monitor) c-=0.10;
+  return clamp(c,0.04,0.55);
+}
+function sessionGain(feat, accuracy){
+  let g=(16+skillOf("frontend")*2+skillOf("backend")*2+laptopBonus()*100)*accuracy;
+  if(S.inspired){ g*=1.25; S.inspired=false; toast("Inspiration spent. Clean work.","good"); }
+  return g;
+}
+/* ---------- typing challenge ---------- */
+let TY=null;
+function openWorkSession(fi){
+  const p=P(); if(!p||p.phase!=="dev") return;
+  if(p.sessionsToday>=maxSessionsToday()||S.skipWork){ toast("You're done for today. Sleep.","warn"); return; }
+  if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee or sleep.","warn"); SFX.warn(); return; }
+  const feat=p.features[fi];
+  const snip=pick(SNIPPETS);
+  const target=snip.join("\n");
+  const secs=Math.round(clamp(34-feat.diff*2.4+(S.gear.keyboard?4:0)+skillOf("frontend")*0.8,14,42));
+  TY={fi, target, typed:"", start:Date.now(), secs, done:false, chars:0, correct:0};
+  openModal(`
+    <h3>Work session: ${esc(feat.name)}</h3>
+    <p class="meta">Type the code below. Accuracy builds the feature; sloppiness builds bugs.</p>
+    <div class="tybar"><span class="meta">time</span><div id="tyTimer"><i style="width:100%"></i></div><span id="tyStat">0%</span></div>
+    <div id="tyTarget">${renderTarget(target,"")}</div>
+    <textarea id="tyInput" spellcheck="false" autocomplete="off" placeholder="type here..."></textarea>
+    <div class="actions"><button class="btn ghost" id="tyQuit">Give up</button></div>
+  `, true);
+  const inp=$("#tyInput");
+  inp.focus();
+  inp.addEventListener("input", onType);
+  $("#tyQuit").onclick=()=>{ endType(false); };
+  TY.timer=setInterval(tyTick,100);
+}
+function renderTarget(target, typed){
+  let out="";
+  for(let i=0;i<target.length;i++){
+    const ch=target[i]==="\n"?"\n":target[i];
+    let cls="";
+    if(i<typed.length) cls = typed[i]===target[i] ? "done" : "err";
+    else if(i===typed.length) cls="cur";
+    out+= cls ? `<span class="${cls}">${esc(ch)}</span>` : esc(ch);
+  }
+  if(typed.length>=target.length) out+='<span class="cur"> </span>';
+  return out;
+}
+function tyTick(){
+  if(!TY||TY.done) return;
+  const el=Math.floor((Date.now()-TY.start)/1000);
+  const left=Math.max(0,TY.secs-el);
+  const ti=$("#tyTimer i"); if(ti) ti.style.width=(left/TY.secs*100)+"%";
+  if(left<=0) endType(true);
+}
+function onType(){
+  if(!TY||TY.done) return;
+  const inp=$("#tyInput");
+  TY.typed=inp.value;
+  TY.correct=0;
+  for(let i=0;i<TY.typed.length;i++){ if(TY.typed[i]===TY.target[i]) TY.correct++; }
+  const pct=Math.round(TY.correct/TY.target.length*100);
+  const st=$("#tyStat"); if(st) st.textContent=pct+"%";
+  const tt=$("#tyTarget"); if(tt) tt.innerHTML=renderTarget(TY.target,TY.typed);
+  // keep view near caret
+  tt.scrollTop=tt.scrollHeight*0.6;
+  if(chance(.3)) SFX.type();
+  if(TY.typed.length>=TY.target.length){ endType(true); }
+}
+function endType(natural){
+  if(!TY||TY.done) return;
+  TY.done=true; clearInterval(TY.timer);
+  const p=P(), feat=p.features[TY.fi];
+  const acc=clamp(TY.correct/Math.max(1,TY.target.length),0,1);
+  const elapsed=(Date.now()-TY.start)/1000;
+  const speed=clamp(TY.secs/Math.max(elapsed,1),0.4,1.4);
+  let gain=Math.round(sessionGain(feat,acc)*speed);
+  feat.prog=clamp(feat.prog+gain,0,100);
+  spendEnergy(SESSION_COST);
+  p.sessionsToday=(p.sessionsToday||0)+1;
+  let bugTxt="";
+  if(Math.random()<bugChance(feat)*(1.2-acc*0.5)){
+    p.hiddenBugs++;
+    bugTxt=" ...and you left a bug in there.";
+  }
+  closeModal();
+  SFX.click();
+  if(feat.prog>=100){
+    feat.done=true;
+    log("Feature complete: "+feat.name,"good");
+    toast("Feature shipped: "+feat.name,"good");
+    gainXp("frontend",8); gainXp(p.offer.catId==="devops"||p.offer.catId==="api"||p.offer.catId==="migration"?"backend":"frontend",4);
+    if(p.features.every(f=>f.done)){ p.phase="test"; toast("All features built. Run the tests.","good"); SFX.good(); }
+  } else {
+    toast("+"+gain+"% on "+feat.name+bugTxt, bugTxt?"warn":"");
+  }
+  save(); renderAll();
+}
+/* ---------- testing & bugfixing ---------- */
+function runTests(){
+  const p=P(); if(!p||p.phase!=="test") return;
+  const found=[];
+  for(let i=0;i<p.hiddenBugs;i++) found.push(makeBug());
+  // tests themselves surface extra issues on bigger builds
+  const extra=chance(.35)?1:0;
+  for(let i=0;i<extra;i++) found.push(makeBug());
+  p.hiddenBugs=0;
+  p.bugs=found;
+  p.testedDay=S.day;
+  log("Test suite finished: "+found.length+" bug(s) found.", found.length?"bad":"good");
+  if(found.length){ SFX.bad(); toast("Tests found "+found.length+" bug(s). Fix before shipping.","bad"); }
+  else { toast("Tests clean. Ready to deliver.","good"); SFX.good(); }
+  save(); renderAll();
+}
+function makeBug(){
+  const q=pick(BUGQUIZ);
+  const opts=shuffle(q.o.map((t,i)=>({t,ok:i===0})));
+  return {id:nid(), q:q.q, opts};
+}
+function fixBug(bid, optIdx){
+  const p=P(); if(!p) return;
+  const b=p.bugs.find(x=>x.id===bid); if(!b) return;
+  const ok=b.opts[optIdx].ok;
+  if(ok){
+    p.bugs=p.bugs.filter(x=>x.id!==bid);
+    gainXp("backend",10);
+    SFX.good();
+    toast("Fixed.","good");
+    log("Bug fixed: "+b.q,"good");
+  } else {
+    addStress(6);
+    SFX.bad();
+    toast("That made it worse. Try again.","bad");
+  }
+  save(); renderAll();
+  if(!ok) openFixModal(bid); // let them try again
+}
+/* ---------- delivery ---------- */
+function canDeliver(){
+  const p=P(); return p && p.phase!=="delivered" && p.features.every(f=>f.done);
+}
+function qualityNow(){
+  const p=P();
+  let q=58+p.features.filter(f=>f.done).length*6 - p.bugs.length*9 + avgSkill();
+  if(S.gear.desklamp) q+=1;
+  const onTime=S.day<=p.offer.createdDay+p.offer.days+1;
+  if(!onTime) q-=8;
+  return clamp(Math.round(q),5,100);
+}
+function avgSkill(){ return SKILLS.reduce((a,k)=>a+S.skills[k],0)/SKILLS.length; }
+function deliverProject(){
+  const p=P(); if(!p) return;
+  const q=qualityNow();
+  const dueDay=p.offer.createdDay+p.offer.days;
+  const onTime=S.day<=dueDay+1;
+  const lateDays=Math.max(0,S.day-dueDay);
+  // stars
+  let stars=1+q/26+(onTime?0.5:-1.1)+(p.client.picky?-(p.bugs.length?0.6:0.1):0)+rnd(-0.25,0.35);
+  stars=clamp(Math.round(stars*2)/2,1,5);
+  // money
+  const rest=p.quote-p.depositPaid;
+  const inv=issueInvoice(p.client,rest,p.client.netDays,"Final payment: "+p.offer.title);
+  if(p.client.tip&&chance(p.client.tip)){ money(120,"Tip from "+p.client.company,"income"); S.incomeQuarter+=120; S.totalEarned+=120; toast("Bonus from "+p.client.name+": $120. They noticed the effort.","gold"); }
+  // review scheduled
+  const rtxt = stars>=4.5?pick(REVIEWS_POS):stars>=3?pick(REVIEWS_MID):pick(REVIEWS_NEG);
+  S.reviews.push({day:S.day+rndi(1,3), stars, clientId:p.client.id, project:p.offer.title, txt:rtxt});
+  // goodwill & stats
+  p.client.projects++; p.client.goodwill=clamp(p.client.goodwill+(stars>=4?10:(stars>=3?2:-12)),0,100);
+  S.projectsDone++;
+  gainXp("comms",12);
+  if(lateDays>0) addStress(8);
+  log("Delivered "+p.offer.title+" (quality "+q+"/100, "+stars+"★"+(lateDays?", "+lateDays+"d late":"")+")","gold");
+  SFX.levelup();
+  S.project=null;
+  save(); renderAll();
+  toast("Shipped. Invoice for "+fmt$(rest)+" is out. Now you wait.","gold");
+  maybeMilestone();
+}
+/* ---------- xp ---------- */
+function gainXp(k,n){
+  S.xp[k]=(S.xp[k]||0)+n;
+  while(S.xp[k]>=xpNeed(S.skills[k]) && S.skills[k]<10){
+    S.xp[k]-=xpNeed(S.skills[k]);
+    S.skills[k]++;
+    SFX.levelup();
+    toast(SKILL_LABEL[k]+" advanced to level "+S.skills[k]+".","gold",5000);
+    log(SKILL_LABEL[k]+" is now level "+S.skills[k],"gold");
+  }
+}
+/* ---------- milestones ---------- */
+const MILES=[
+  {id:"m1",test:s=>s.projectsDone>=1,txt:"First project shipped. You exist now."},
+  {id:"m2",test:s=>s.totalEarned>=10000,txt:"$10k earned. Landlord knows your name (fondly)."},
+  {id:"m3",test:s=>s.rep>=4.2,txt:"4.2 stars. Clients ask for you by name."},
+  {id:"m4",test:s=>s.totalEarned>=50000,txt:"$50k earned. This is a real business."},
+  {id:"m5",test:s=>s.projectsDone>=10,txt:"Ten projects. Portfolio actually impressive."},
+  {id:"m6",test:s=>s.totalEarned>=100000,txt:"$100k. Freelance legend."},
+];
+function maybeMilestone(){
+  for(const m of MILES){
+    if(!S.flags["m_"+m.id] && m.test(S)){
+      S.flags["m_"+m.id]=true;
+      toast("MILESTONE: "+m.txt,"gold",6000);
+      log("Milestone: "+m.txt,"gold");
+    }
+  }
+}
+/* ---------- day advance ---------- */
+function advanceDay(){
+  if(checkBroke()) return;
+  S.day++;
+  sleepNight();
+  if(S.machineBroken){ S.machineBroken=false; }
+  tickInvoices();
+  tickBills();
+  rollEvents();
+  rollOffers();
+  rollReviews();
+  checkBroke();
+  save();
+  renderAll();
+}
+function rollOffers(){
+  const gap=S.day-S.lastOfferDay;
+  let chanceToday=clamp(0.25+gap*0.18+(S.rep-3)*0.05,0.15,0.95);
+  if(S.project&&S.day-S.project.startedDay<2) chanceToday*=0.6;
+  if(chance(chanceToday)){
+    genOffer();
+    if(chance(.25)) genOffer();
+  }
+  S.offers=S.offers.filter(o=>S.day-o.createdDay<=10);
+  if(S.offers.length>5) S.offers.splice(0,S.offers.length-5);
+}
+function rollReviews(){
+  const due=S.reviews.filter(r=>r.day<=S.day);
+  S.reviews=S.reviews.filter(r=>r.day>S.day);
+  for(const r of due){
+    const c=clientById(r.clientId);
+    S.repCount++;
+    S.rep=Math.round(((S.rep*Math.max(1,S.repCount-1))+r.stars)/(Math.max(1,S.repCount))*100)/100;
+    const txt = r.stars>=4.5?pick(REVIEWS_POS):r.stars>=3?pick(REVIEWS_MID):pick(REVIEWS_NEG);
+    const name=c?c.name:"a client";
+    toast("New review ("+r.stars+"★): \""+txt+"\"","gold"=== "gold"&&r.stars>=3.5?(r.stars>=3.5?"gold":"warn"):"bad",5000);
+    log("Review from "+name+": "+r.stars+"★ "+txt, r.stars>=3.5?"gold":"bad");
+  }
+  S.rep=Math.round(S.rep*100)/100;
+}
+function rollEvents(){
+  const n=chance(.55)?1:(chance(.5)?2:0);
+  for(let i=0;i<n;i++) fireRandomEvent();
+}
+function fireRandomEvent(){
+  const p=P();
+  const pool=[];
+  if(p) pool.push("scope","scope","revise");
+  if(S.invoices.some(i=>i.status==="due"&&i.due>=S.day-6)) pool.push("ghost");
+  pool.push("referral","recruiter","inspired","coffee","portfoliolove");
+  if(!S.gear.ups) pool.push("laptop");
+  if(chance(.4)) pool.push("sick");
+  if(S.rep>=4&&chance(.3)) pool.push("reviewbomb");
+  const ev=pick(pool);
+  switch(ev){
+    case "scope":{
+      const featName=pick(["a dark mode","an admin page nobody asked for","a print-this-report button","Stripe integration","an email newsletter","multi-language support","a mobile version","a settings page"]);
+      const extra=Math.round(p.quote*0.12/10)*10;
+      openChoiceModal("Scope creep",
+        esc(p.client.name)+" calls: \""+esc(featName)+"\". Just one more thing. It's small, right? It is not small.",
+        [
+          {label:"Take it (+"+fmt$(extra)+", more work, more stress)",fn:()=>{
+            p.features.push({name:"Extra: "+featName,diff:rndi(2,4),prog:0,done:false});
+            p.phase="dev"; p.quote+=extra;
+            addStress(7);
+            toast("Scope grew. So did the invoice.","warn");
+            log("Scope creep: "+featName+" (+"+fmt$(extra)+")","warn");
+            save(); renderAll();
+          }},
+          {label:"Politely decline",fn:()=>{
+            p.client.goodwill=clamp(p.client.goodwill-4,0,100);
+            toast("You held the line on scope.","good");
+            log("Declined scope creep: "+featName,"acc2");
+            save(); renderAll();
+          }},
+        ]);
+      break;}
+    case "revise":{
+      if(p.phase==="delivered") break;
+      const f=pick(p.features.filter(x=>x.done))||p.features[0];
+      if(!f) break;
+      f.done=false; f.prog=Math.round(f.prog*0.45);
+      p.phase="dev";
+      addStress(5);
+      if(p.client.picky) addStress(3);
+      toast(p.client.name+" wants changes to "+f.name+". Revision cycle.","warn");
+      log("Revision request: "+f.name,"warn");
+      break;}
+    case "ghost":{
+      const inv=pick(S.invoices.filter(i=>i.status==="due"));
+      if(!inv) break;
+      inv.due+=rndi(1,3);
+      toast(inv.company+" said the check is 'in process'. It is not.","warn");
+      log("Payment delayed: "+inv.company,"warn");
+      break;}
+    case "laptop":{
+      const cost=S.gear.ups?rndi(40,90):rndi(180,420);
+      money(-cost,"Laptop repair","expense");
+      if(!S.gear.ups){ S.skipWork=true; toast("Laptop died mid-build. Repair: "+fmt$(cost)+". The day is written off.","bad"); log("Laptop failure. No work today.","bad"); }
+      else { toast("Power flicker. The battery backup saved you; "+fmt$(cost)+" for a new fuse.","warn"); log("Minor laptop scare: "+fmt$(cost),"warn"); }
+      SFX.bad();
+      break;}
+    case "referral":{
+      S.rep=Math.round((S.rep+0.08)*100)/100;
+      genOffer();
+      toast("A past client referred you. Rep up, new offer in your inbox.","gold");
+      log("Referral came in. Rep rising.","gold");
+      break;}
+    case "recruiter":{
+      money(200,"Recruiter referral fee","income"); S.incomeQuarter+=200; S.totalEarned+=200;
+      toast("A recruiter paid you $200 for referring a friend. Weird system, take the money.","good");
+      log("Recruiter referral fee: +$200","good");
+      break;}
+    case "inspired":{
+      S.inspired=true;
+      toast("3am idea. It's actually good. Next session +25%.","good");
+      log("Inspiration struck.","acc2");
+      break;}
+    case "sick":{
+      S.skipWork=true;
+      S.energy=clamp(S.energy-15,0,100);
+      toast("You caught something. No work today, no matter the deadline.","bad");
+      log("Sick day.","bad");
+      break;}
+    case "coffee":{
+      if(S.gear.coffeemachine&&!S.machineBroken){ S.machineBroken=true; money(-80,"Espresso machine repair","expense"); toast("Espresso machine died. "+fmt$(80)+" to revive it.","warn"); }
+      break;}
+    case "reviewbomb":{
+      S.rep=Math.round((S.rep+0.15)*100)/100;
+      toast("Someone tweeted your portfolio. Rep is climbing.","gold");
+      log("Portfolio got shared online. Rep up.","gold");
+      break;}
+    case "portfoliolove":{
+      S.rep=Math.round((S.rep+0.06)*100)/100;
+      toast("A dev blog linked your work. Nice.","good");
+      break;}
+  }
+}
+/* ---------- gear shop ---------- */
+function openShop(){
+  const rows=GEAR.map(g=>{
+    const owned=!!S.gear[g.id];
+    const locked=g.req&&!S.gear[g.req];
+    return `<div class="card"><div class="spread">
+      <div><h3>${esc(g.name)}</h3><div class="meta">${esc(g.desc)}</div></div>
+      <div style="text-align:right">${owned?'<span class="tag good">owned</span>':`<button class="btn sm ${locked?"":"primary"}" data-buy="${g.id}" ${locked||S.cash<g.cost?"disabled":""}>${fmt$(g.cost)}</button>`}</div>
+    </div></div>`;
+  }).join("");
+  openModal(`<h3>Gear</h3><p class="meta">Cash: ${fmt$(S.cash)}</p>${rows}<div class="actions"><button class="btn" data-close>Close</button></div>`);
+  $$("#modalBox [data-buy]").forEach(b=>b.onclick=()=>{
+    const g=GEAR.find(x=>x.id===b.dataset.buy); if(!g||S.cash<g.cost) return;
+    money(-g.cost,"Bought "+g.name,"expense");
+    S.gear[g.id]=true;
+    SFX.cash();
+    toast("Bought "+g.name+".","good");
+    save(); openShop(); renderTop();
+  });
+}
+/* ---------- game over ---------- */
+function gameOver(reason){
+  wipeSave();
+  openModal(`<h3 style="color:var(--bad)">Game over</h3>
+    <p>${esc(reason)}</p>
+    <p class="meta">Day ${S.day}. ${fmt$(S.totalEarned)} earned lifetime. ${S.projectsDone} project(s) shipped. Final rep: ${S.rep}★.</p>
+    <div class="actions"><button class="btn primary" id="goRestart">Start over</button></div>`,true);
+  $("#goRestart").onclick=()=>{ closeModal(); S=freshState(); genOffer(true); genOffer(true); save(); showScreen("main"); renderAll(); };
+}
+/* ---------- rendering ---------- */
+function starStr(n){
+  const full=Math.floor(n), half=n-full>=0.5;
+  let s="";
+  for(let i=0;i<full;i++) s+="★";
+  if(half) s+="⯨";
+  for(let i=full+(half?1:0);i<5;i++) s+="<span class='off'>★</span>";
+  return s;
+}
+function renderTop(){
+  $("#stCash").textContent=fmt$(S.cash);
+  $("#stCash").style.color=S.cash<0?"var(--bad)":"";
+  $("#energyFill").style.width=S.energy+"%";
+  $("#stEnergy").textContent=Math.round(S.energy);
+  $("#stressFill").style.width=S.stress+"%";
+  $("#stStress").textContent=Math.round(S.stress);
+  $("#stRep").innerHTML=starStr(S.rep);
+  $("#stRepN").textContent=S.rep.toFixed(1);
+  const p=dayParts(S.day);
+  $("#stDay").textContent="Day "+S.day;
+  $("#stWk").textContent=p.dow;
+  $("#stDate").textContent=dateStr(S.day);
+}
+function dots(){
+  $("#dotInbox").classList.toggle("hidden",!S.offers.some(o=>eligible(o)));
+  $("#dotProject").classList.toggle("hidden",!S.project);
+  $("#dotMoney").classList.toggle("hidden",S.invoices.some(i=>i.status==="paid"&&S.day-i.paid<=0)||S.invoices.some(i=>i.status==="due"&&i.due<=S.day));
+}
+function persTag(id){
+  const p=PERSONALITIES.find(x=>x.id===id)||PERSONALITIES[0];
+  const cls={generous:"good",vip:"info",cheap:"bad",ghosty:"warn",late:"warn",picky:"warn"}[id]||"";
+  return `<span class="tag ${cls}">${esc(p.label)}</span>`;
+}
+function renderInbox(){
+  const el=$("#tab-inbox");
+  if(!S.offers.length){
+    el.innerHTML=`<h2 class="ph">Inbox <small>offers land here</small></h2><div class="empty">No offers right now. Sleep and check back.<br><span class="faint">Freelancing has a lot of this.</span></div>`;
+    return;
+  }
+  let h=`<h2 class="ph">Inbox <small>${S.offers.length} open offer(s)</small></h2>`;
+  for(const o of S.offers){
+    const ok=eligible(o);
+    const c=o.client;
+    const p=PERSONALITIES.find(x=>x.id===o.pers)||PERSONALITIES[0];
+    h+=`<div class="card offer">
+      <div class="row" style="margin-bottom:6px">
+        <div class="avat" style="background:linear-gradient(135deg,#8f7bff,#5ef2a0)">${esc(c.name.split(" ").map(x=>x[0]).join(""))}</div>
+        <div style="flex:1"><h3>${esc(o.title)}</h3>
+          <div class="meta">${esc(c.name)} · ${esc(c.company)} · ${esc(c.industry)}</div></div>
+        <div class="pay">${fmt$(o.ask)}</div>
+      </div>
+      <p style="margin:4px 0 8px">${esc(o.brief)}</p>
+      <div class="tagrow">
+        ${persTag(o.pers)}
+        <span class="tag info">difficulty ${o.diff}</span>
+        <span class="tag">deadline ${o.days}d</span>
+        <span class="tag">${esc(p.blurb)}</span>
+        <span class="tag warn">pays net ${c.netDays}</span>
+      </div>
+      <div class="row">
+        <button class="btn primary sm" data-accept="${o.id}" ${ok?"":"disabled"}>Accept & negotiate</button>
+        <button class="btn ghost sm" data-decline="${o.id}">Pass</button>
+        ${ok?"":`<span class="meta red">needs ${Object.keys(o.req).map(k=>SKILL_LABEL[k]+" "+Math.max(1,o.req[k]-1)).join(", ")}</span>`}
+      </div>
+    </div>`;
+  }
+  el.innerHTML=h;
+  $$("#tab-inbox [data-accept]").forEach(b=>b.onclick=()=>{SFX.click();acceptOffer(+b.dataset.accept)});
+  $$("#tab-inbox [data-decline]").forEach(b=>b.onclick=()=>{
+    S.offers=S.offers.filter(o=>o.id!==+b.dataset.decline);
+    log("Passed on an offer.","");
+    save(); renderAll();
+  });
+}
+function featRow(f,i,p){
+  return `<div class="feat ${f.done?"done":""}">
+    <div class="ic">${f.done?"✓":i+1}</div>
+    <div style="flex:1">
+      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span>`}</div>
+      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${f.prog}%"></i></div>
+    </div>
+    ${!f.done&&p.phase==="dev"?`<button class="btn sm ${S.energy>=SESSION_COST&&p.sessionsToday<maxSessionsToday()&&!S.skipWork?"primary":""}" data-work="${i}" ${S.energy<SESSION_COST||p.sessionsToday>=maxSessionsToday()||S.skipWork?"disabled":""}>Work</button>`:""}
+  </div>`;
+}
+function renderProject(){
+  const el=$("#tab-project");
+  const p=P();
+  if(!p){
+    el.innerHTML=`<h2 class="ph">Project <small>what you're building</small></h2><div class="empty">No active project. Take an offer from the inbox.<br><span class="faint">The rent does not accept "between projects" as an excuse.</span></div>`;
+    return;
+  }
+  const due=p.offer.createdDay+p.offer.days;
+  const left=due-S.day+1;
+  const totalProg=Math.round(p.features.reduce((a,f)=>a+f.prog,0)/p.features.length);
+  let h=`<h2 class="ph">Project <small>${esc(p.offer.catName)}</small></h2>
+  <div class="card">
+    <div class="spread"><div><h3>${esc(p.offer.title)}</h3>
+      <div class="meta">${esc(p.client.name)} · ${esc(p.client.company)} · ${esc(p.offer.blurb)}</div></div>
+      <div style="text-align:right"><div class="pay">${fmt$(p.quote)}</div>
+      <div class="meta">${p.depositPaid?fmt$(p.depositPaid)+" deposit in · ":""}${fmt$(p.quote-p.depositPaid)} on delivery</div></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="tag ${left<=2?"bad":left<=4?"warn":"info"}">${left<=0?"deadline blown":left+" day"+(left===1?"":"s")+" to deadline"}</span>
+      <span class="tag">phase: ${p.phase}</span>
+      <span class="tag">sessions left today: ${sessionsLeftToday()}</span>
+      ${S.inspired?'<span class="tag gold">inspired: next session +25%</span>':""}
+    </div>
+    <div class="bar" style="margin:12px 0"><i class="fill-acc2" style="width:${totalProg}%"></i></div>
+    <div>${p.features.map((f,i)=>featRow(f,i,p)).join("")}</div>
+  </div>`;
+  if(p.phase==="test"||p.bugs.length){
+    h+=`<div class="card"><h3>Quality control</h3>`;
+    if(!p.testedDay) h+=`<p class="meta">Run the test suite before you ship. Clients notice bugs; reviewers really notice bugs.</p><div class="row" style="margin-top:8px"><button class="btn primary" data-test>Run tests</button></div>`;
+    else{
+      h+=`<p class="meta">Tests run on day ${p.testedDay}. ${p.bugs.length} open bug(s).</p>`;
+      if(p.bugs.length) h+=p.bugs.map(b=>`<div class="row" style="margin-top:8px"><span class="tag bad">bug</span><span class="meta" style="flex:1">${esc(b.q)}</span><button class="btn sm" data-fix="${b.id}">Fix</button></div>`).join("");
+      h+=`<div class="row" style="margin-top:12px"><button class="btn sm" data-retest>Run tests again</button>${p.bugs.length?"":`<button class="btn primary" data-deliver>Deliver to client</button>`}</div>`;
+      if(p.bugs.length) h+=`<div class="row" style="margin-top:8px"><button class="btn sm danger" data-deliver>Ship it broken anyway</button><span class="meta faint">they will find out</span></div>`;
+    }
+    h+=`</div>`;
+  }
+  if(p.phase==="dev"&&p.features.every(f=>f.done)){
+    h+=`<div class="row" style="margin-top:4px"><button class="btn primary" data-testforce>Move to testing</button></div>`;
+  }
+  el.innerHTML=h;
+  $$("#tab-project [data-work]").forEach(b=>b.onclick=()=>{SFX.click();openWorkSession(+b.dataset.work)});
+  const tb=$("#tab-project [data-test]"); if(tb) tb.onclick=()=>{SFX.click();p.testedDay=p.testedDay||S.day;runTests()};
+  const rf=$("#tab-project [data-testforce]"); if(rf) rf.onclick=()=>{SFX.click();p.phase="test";save();renderAll()};
+  const rt=$("#tab-project [data-retest]"); if(rt) rt.onclick=()=>{SFX.click();runTests()};
+  $$("#tab-project [data-fix]").forEach(b=>b.onclick=()=>{SFX.click();openFixModal(+b.dataset.fix)});
+  $$("#tab-project [data-deliver]").forEach(b=>b.onclick=()=>{SFX.click();openDeliverModal()});
+}
+function openDeliverModal(){
+  const p=P(); if(!p) return;
+  const q=qualityNow();
+  const due=p.offer.createdDay+p.offer.days;
+  const onTime=S.day<=due+1;
+  openModal(`<h3>Ship it?</h3>
+    <p>Delivering <b>${esc(p.offer.title)}</b> to ${esc(p.client.company)}.</p>
+    <div class="tagrow">
+      <span class="tag ${q>=75?"good":q>=50?"warn":"bad"}">estimated quality ${q}/100</span>
+      <span class="tag ${onTime?"good":"bad"}">${onTime?"on time":(S.day-due)+" day(s) late"}</span>
+      ${p.bugs.length?`<span class="tag bad">${p.bugs.length} known bug(s)</span>`:`<span class="tag good">tests clean</span>`}
+    </div>
+    <p class="meta">You invoiced ${fmt$(p.quote-p.depositPaid)} (net ${p.client.netDays} days). The review lands a few days later. Quality drives it.</p>
+    <div class="actions"><button class="btn ghost" data-close>Not yet</button><button class="btn primary" id="doDeliver">Ship it</button></div>`);
+  $("#doDeliver").onclick=()=>{ closeModal(); deliverProject(); };
+}
+function renderClients(){
+  const el=$("#tab-clients");
+  let h=`<h2 class="ph">Clients <small>${S.clients.length} in your roster, no repeats ever</small></h2>`;
+  if(!S.clients.length){ el.innerHTML=h+`<div class="empty">Nobody yet.</div>`; return; }
+  const sorted=[...S.clients].sort((a,b)=>b.projects-a.projects||b.goodwill-a.goodwill);
+  h+=sorted.map(c=>{
+    const pers=PERSONALITIES.find(x=>x.id===c.pers);
+    const busy=clientBusy(c);
+    const hist=c.history.map(id=>{const cat=CATEGORIES.find(x=>x.id===id);return cat?cat.name:id;});
+    return `<div class="card">
+      <div class="row" style="margin-bottom:6px">
+        <div class="avat" style="background:linear-gradient(135deg,${c.projects?"#5ef2a0,#8f7bff":"#3b4a68,#55688f"})">${esc(c.name.split(" ").map(x=>x[0]).join(""))}</div>
+        <div style="flex:1"><h3>${esc(c.name)}</h3><div class="meta">${esc(c.company)} · ${esc(c.industry)}</div></div>
+        <div style="text-align:right">${busy?'<span class="tag warn">working with you</span>':(c.projects?'<span class="tag good">past client</span>':'<span class="tag">lead</span>')}</div>
+      </div>
+      <div class="tagrow">
+        ${persTag(c.pers)}
+        <span class="tag">goodwill ${Math.round(c.goodwill)}/100</span>
+        <span class="tag warn">pays net ${c.netDays}</span>
+        <span class="tag">${c.projects} project(s)</span>
+        <span class="tag gold">${fmt$(c.earned)} earned</span>
+      </div>
+      ${hist.length?`<div class="meta faint" style="margin-top:4px">past work: ${esc(hist.join(", "))} — ${c.projects?"next job will be something new":""}</div>`:""}
+    </div>`;
+  }).join("");
+  el.innerHTML=h;
+}
+function renderMoney(){
+  const el=$("#tab-money");
+  const p=dayParts(S.day);
+  const nextRentDay=(Math.floor((S.day-1)/30)+1)*30+1;
+  let h=`<h2 class="ph">Money <small>the part that keeps score</small></h2>
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="kpi"><div class="v" style="color:${S.cash<0?"var(--bad)":"var(--acc)"}">${fmt$(S.cash)}</div><div class="k">cash</div></div>
+    <div class="kpi"><div class="v">${fmt$(S.totalEarned)}</div><div class="k">earned lifetime</div></div>
+    <div class="kpi"><div class="v">${fmt$(Math.round(S.incomeQuarter*TAX_RATE))}</div><div class="k">taxes owed next quarter</div></div>
+  </div>
+  <div class="card"><h3>Recurring</h3>
+    <table><tr><th>bill</th><th class="num">monthly</th><th>next due</th></tr>
+    <tr><td>Rent</td><td class="num">${fmt$(RENT)}</td><td>day ${nextRentDay}</td></tr>
+    <tr><td>Utilities + internet</td><td class="num">${fmt$(UTILITIES+INTERNET)}</td><td>day ${nextRentDay}</td></tr>
+    <tr><td>Health insurance</td><td class="num">${fmt$(INSURANCE)}</td><td>day ${Math.floor((S.day-1)/30)*30+15}</td></tr>
+    <tr><td>Quarterly taxes (${Math.round(TAX_RATE*100)}%)</td><td class="num">on profit</td><td>every ${QUARTER_DAYS} days</td></tr></table>
+  </div>
+  <div class="card"><h3>Invoices</h3>`;
+  const open=S.invoices.filter(i=>i.status==="due");
+  const done=S.invoices.filter(i=>i.status!=="due");
+  if(!open.length) h+=`<p class="meta">Nothing outstanding. Weird feeling, isn't it.</p>`;
+  else h+=`<table><tr><th>client</th><th>note</th><th class="num">amount</th><th>due</th><th></th></tr>`+
+    open.map(i=>`<tr><td>${esc(i.company)}</td><td class="meta">${esc(i.note||"")}</td><td class="num pay">${fmt$(i.amount)}</td>
+      <td class="${i.due<S.day?"red":"meta"}">day ${i.due}${i.due<S.day?" (late)":""}</td>
+      <td><button class="btn sm ghost" data-nag="${i.id}">Nag</button> <button class="btn sm danger" data-write="${i.id}" title="give up on it">Write off</button></td></tr>`).join("")+`</table>`;
+  h+=`</div>`;
+  if(done.length){
+    h+=`<div class="card"><h3>History</h3><div class="scrollY"><table><tr><th>client</th><th class="num">amount</th><th>status</th></tr>`+
+      done.map(i=>`<tr><td>${esc(i.company)}</td><td class="num">${fmt$(i.amount)}</td><td class="meta">${i.status}</td></tr>`).join("")+`</table></div></div>`;
+  }
+  h+=`<div class="card"><h3>Ledger <span class="meta faint">(last 12 entries)</span></h3><table>`+
+    [...S.ledger].slice(-12).reverse().map(l=>`<tr><td class="meta">day ${l.d}</td><td>${esc(l.note||l.kind)}</td><td class="num ${l.amount>=0?"green":"red"}">${fmt$(l.amount)}</td></tr>`).join("")+`</table></div>`;
+  el.innerHTML=h;
+  $$("#tab-money [data-nag]").forEach(b=>b.onclick=()=>{nagInvoice(+b.dataset.nag);renderAll()});
+  $$("#tab-money [data-write]").forEach(b=>b.onclick=()=>{openChoiceModal("Write off "+esc(fmt$(S.invoices.find(i=>i.id===+b.dataset.write).amount))+"?","No payment is coming. Writing it off clears the books and stings a little.",[
+    {label:"Write it off",fn:()=>{writeOffInvoice(+b.dataset.write);renderAll()}},
+    {label:"Keep chasing",fn:()=>{}},
+  ])});
+}
+function renderYou(){
+  const el=$("#tab-you");
+  let h=`<h2 class="ph">You <small>skills, gear, stats</small></h2>
+  <div class="grid2">
+  <div class="card"><h3>Skills</h3>`;
+  h+=SKILLS.map(k=>{
+    const lv=S.skills[k], x=S.xp[k], need=xpNeed(lv);
+    return `<div style="margin:10px 0"><div class="spread"><span class="nm">${SKILL_LABEL[k]} <span class="tag info">lv ${lv}</span></span><span class="meta faint">${x}/${need} xp</span></div>
+    <div class="bar" style="margin-top:4px"><i class="fill-acc2" style="width:${Math.min(100,x/need*100)}%"></i></div></div>`;
+  }).join("");
+  h+=`<p class="meta faint" style="margin-top:8px">Skills gate which offers you can take and how fast you build.</p></div>
+  <div class="card"><h3>Gear</h3>`;
+  h+=GEAR.map(g=>`<div class="row" style="margin:7px 0"><span class="tag ${S.gear[g.id]?"good":""}">${S.gear[g.id]?"✓":"✗"}</span><span class="nm" style="flex:1">${esc(g.name)}</span><span class="meta faint">${S.gear[g.id]?"owned":fmt$(g.cost)}</span></div>`).join("");
+  h+=`<div class="row" style="margin-top:10px"><button class="btn sm primary" id="btnShop2">Open gear shop</button>
+  <button class="btn sm" id="btnCoffee">Coffee (${fmt$(S.gear.coffeemachine?3:6)})</button></div></div>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    <div class="kpi"><div class="v">${S.projectsDone}</div><div class="k">projects shipped</div></div>
+    <div class="kpi"><div class="v">${S.rep.toFixed(1)}★</div><div class="k">reputation (${S.repCount} reviews)</div></div>
+    <div class="kpi"><div class="v">${S.clients.length}</div><div class="k">clients in roster</div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Reviews</h3>`;
+  const rv=[...S.reviews];
+  h+= rv.length? rv.map(r=>{const c=clientById(r.clientId);return `<div class="row" style="margin:6px 0"><span class="stars">${starStr(r.stars)}</span><span class="meta" style="flex:1">"${esc(r.txt||"")}"</span><span class="meta faint">${esc(c?c.company:"")}</span></div>`;}).join(""):`<p class="meta">No reviews yet. Ship something.</p>`;
+  h+=`</div>`;
+  el.innerHTML=h;
+  $("#btnShop2").onclick=()=>openShop();
+  $("#btnCoffee").onclick=()=>buyCoffee();
+}
+function renderAll(){
+  renderTop(); dots();
+  renderInbox(); renderProject(); renderClients(); renderMoney(); renderYou();
+  $("#log").innerHTML=S.log.map(l=>`<div><span class="d">d${l.d}</span><span class="${l.c}">${esc(l.t)}</span></div>`).join("");
+}
+/* ---------- modal helpers ---------- */
+function openModal(html, lock){
+  const root=$("#modalRoot"), box=$("#modalBox");
+  box.innerHTML=html;
+  root.classList.add("open");
+  $$("#modalBox [data-close]").forEach(b=>b.onclick=()=>{SFX.click();closeModal()});
+  box.dataset.lock=lock?"1":"";
+}
+function closeModal(){ const root=$("#modalRoot"); root.classList.remove("open"); $("#modalBox").innerHTML=""; }
+function openChoiceModal(title,body,opts){
+  let h=`<h3>${title}</h3><p style="margin:10px 0">${body}</p><div class="actions">`;
+  opts.forEach((o,i)=>{ h+=`<button class="btn ${i===0?"primary":"ghost"}" data-ch="${i}">${esc(o.label)}</button>`; });
+  h+=`</div>`;
+  openModal(h);
+  $$("#modalBox [data-ch]").forEach(b=>b.onclick=()=>{ SFX.click(); const o=opts[+b.dataset.ch]; closeModal(); o.fn(); });
+}
+/* ---------- negotiation ---------- */
+function openNegotiation(off){
+  const suggested=Math.round(off.ask/10)*10;
+  openModal(`<h3>Negotiate: ${esc(off.title)}</h3>
+    <p style="margin:8px 0">${esc(off.brief)}</p>
+    <div class="tagrow">
+      ${persTag(off.pers)}
+      <span class="tag info">difficulty ${off.diff}</span>
+      <span class="tag">deadline ${off.days}d</span>
+      <span class="tag warn">pays net ${off.client.netDays}</span>
+      <span class="tag">${off.feats.length} features</span>
+    </div>
+    <div class="field">
+      <label>Your quote (their ballpark: ${fmt$(suggested)})</label>
+      <input type="range" class="range" id="qRange" min="${Math.max(100,Math.round(suggested*0.4))}" max="${Math.round(suggested*2)}" step="10" value="${suggested}">
+      <div style="font-size:22px;font-weight:800;margin-top:4px" id="qVal">${fmt$(suggested)}</div>
+      <div class="hint">Communication level ${S.skills.comms} gives you a little leverage. Ask for too much and they walk.</div>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="qDeposit" checked> Ask for a 30% deposit (protects against late payment, some clients refuse)</label>
+    </div>
+    <div class="actions"><button class="btn ghost" data-close>Walk away</button><button class="btn primary" id="qSend">Send quote</button></div>`);
+  const range=$("#qRange"), val=$("#qVal");
+  range.oninput=()=>{ val.textContent=fmt$(+range.value); };
+  $("#qSend").onclick=()=>{
+    const amount=+range.value;
+    const wantDeposit=$("#qDeposit").checked;
+    const v=quoteVerdict(off,amount);
+    SFX.click();
+    if(v.kind==="decline"){
+      closeModal();
+      openChoiceModal("They walked",esc(off.client.name)+" says the budget doesn't come close. Silence follows. You get nothing this time.",[
+        {label:"Oh well",fn:()=>{ S.offers=S.offers.filter(o=>o.id!==off.id); log("Quote of "+fmt$(amount)+" got rejected outright.","warn"); save(); renderAll(); }},
+      ]);
+      return;
+    }
+    if(v.kind==="counter"){
+      openChoiceModal("Counter-offer",esc(off.client.name)+" winces at the number. \"We can do "+fmt$(v.counter)+". Final.\"",[
+        {label:"Take "+fmt$(v.counter),fn:()=>{ closeNegotiate(off,v.counter,wantDeposit); }},
+        {label:"Hold at "+fmt$(amount),fn:()=>{ openNegotiation(off); }},
+        {label:"Walk away",fn:()=>{ S.offers=S.offers.filter(o=>o.id!==off.id); log("Walked from negotiation at "+fmt$(amount),"warn"); save(); renderAll(); }},
+      ]);
+      return;
+    }
+    closeNegotiate(off,amount,wantDeposit);
+  };
+}
+function closeNegotiate(off,amount,wantDeposit){
+  // deposit odds by personality
+  const depositRefusers=["cheap","vip","ghosty"];
+  let depositOk=wantDeposit&&!depositRefusers.includes(off.pers);
+  if(wantDeposit&&!depositOk){
+    toast(off.client.name+" refuses deposits. Payment on delivery only.","warn");
+  }
+  const depositPaid=depositOk?Math.round(amount*0.3):0;
+  startProject(off,amount,depositOk,depositPaid);
+}
+/* ---------- bugfix modal ---------- */
+function openFixModal(bid){
+  const p=P(); if(!p) return;
+  const b=p.bugs.find(x=>x.id===bid); if(!b) return;
+  openModal(`<h3>Debugging</h3>
+    <div class="tagrow"><span class="tag bad">bug</span></div>
+    <p class="mono" style="background:#070a11;border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">${esc(b.q)}</p>
+    <p class="meta">What's the right move?</p>
+    ${b.opts.map((o,i)=>`<button class="quizopt" data-opt="${i}">${esc(o.t)}</button>`).join("")}
+    <div class="actions"><button class="btn ghost" data-close>Step away from the desk</button></div>`);
+  $$("#modalBox [data-opt]").forEach(b2=>b2.onclick=()=>{
+    const i=+b2.dataset.opt;
+    if(b.opts[i].ok){ b2.classList.add("right"); setTimeout(()=>{closeModal();fixBug(bid,i);},350); }
+    else{ b2.classList.add("wrong"); b2.disabled=true; fixBug(bid,i); }
+  });
+}
+/* ---------- tabs / screens ---------- */
+let curTab="inbox";
+function switchTab(id){
+  curTab=id;
+  $$("#tabs .tab").forEach(t=>t.classList.toggle("on",t.dataset.tab===id));
+  ["inbox","project","clients","money","you"].forEach(x=>$("#tab-"+x).classList.toggle("hidden",x!==id));
+  SFX.click();
+}
+function showScreen(which){
+  $("#intro").classList.toggle("hidden",which!=="intro");
+  $("#game").classList.toggle("hidden",which!=="main");
+}
+/* ---------- intro code rain ---------- */
+function introRain(){
+  const cv=$("#introCanvas"), ctx=cv.getContext("2d");
+  let cols,drops;
+  function size(){ cv.width=innerWidth; cv.height=innerHeight; cols=Math.floor(cv.width/16); drops=Array(cols).fill(0).map(()=>rnd(-30,0)); }
+  size(); addEventListener("resize",size);
+  const glyphs="01{}<>=;/$fnconstletreturnif".split("");
+  let raf;
+  function frame(){
+    ctx.fillStyle="rgba(10,13,20,0.12)";
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.font="13px ui-monospace,Menlo,Consolas,monospace";
+    for(let i=0;i<cols;i++){
+      const x=i*16, y=drops[i]*16;
+      ctx.fillStyle=chance(.06)?"rgba(143,123,255,.8)":"rgba(94,242,160,"+(chance(.5)?.55:.28)+")";
+      ctx.fillText(pick(glyphs),x,y);
+      drops[i]+=rnd(.2,.7);
+      if(y>cv.height&&chance(.03)) drops[i]=rnd(-20,0);
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  frame();
+  return ()=>cancelAnimationFrame(raf);
+}
+/* ---------- boot ---------- */
+let stopRain=null;
+function init(){
+  stopRain=introRain();
+  if(hasSave()){
+    $("#btnContinue").classList.remove("hidden");
+    try{
+      const old=JSON.parse(localStorage.getItem(SAVE_KEY));
+      $("#introStats").textContent="save found: day "+old.day+" · "+fmt$(old.cash)+" · "+old.projectsDone+" project(s) shipped";
+    }catch(e){}
+  }
+  $("#btnNew").onclick=()=>{ ac(); SFX.click(); if(hasSave()&&!confirm("Start over? Your current save will be erased.")) return; wipeSave(); S=freshState(); genOffer(true); genOffer(true); save(); startMain(); };
+  $("#btnContinue").onclick=()=>{ ac(); SFX.click(); if(load()) startMain(); else toast("Save was unreadable. Starting fresh.","bad"); };
+  $$("#tabs .tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+  $("#btnSleep").onclick=()=>{ SFX.click(); advanceDay(); };
+  $("#btnShop").onclick=()=>openShop();
+  document.addEventListener("keydown",e=>{
+    if(e.key==="Escape"&&$("#modalBox").dataset.lock!=="1") closeModal();
+  });
+}
+function startMain(){
+  showScreen("main");
+  if(stopRain){ stopRain(); stopRain=null; }
+  switchTab("inbox");
+  renderAll();
+  if(S.day===1&&!S.flags.welcomed){
+    S.flags.welcomed=true;
+    openChoiceModal("Day one",
+      "You rented a room with a desk, a laptop, and "+fmt$(S.cash)+" to your name. Rent is "+fmt$(RENT)+" on the first of every month. Your inbox already has offers. Pick one, quote it, build it, ship it, invoice it. The money arrives late. It always arrives late.",
+      [{label:"Let's get to work",fn:()=>{}}]);
+  }
+}
+document.addEventListener("DOMContentLoaded",init);
+</script></body></html>
