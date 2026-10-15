@@ -1664,6 +1664,19 @@ function openChoiceModal(title,body,opts){
   openModal(h);
   $$("#modalBox [data-ch]").forEach(b=>b.onclick=()=>{ SFX.click(); const o=opts[+b.dataset.ch]; closeModal(); o.fn(); });
 }
+/* ---------- quote verdicts ---------- */
+const TOLERANCE={generous:1.15,chill:1.25,picky:1.0,micromanager:1.05,ghosty:1.0,cheap:0.9,late:1.1,vip:1.3,excited:1.2,bureaucrat:1.0};
+const COUNTER_MULT={generous:0.92,chill:0.95,picky:0.85,micromanager:0.9,ghosty:0.8,cheap:0.75,late:0.85,vip:0.95,excited:0.9,bureaucrat:0.9};
+function quoteVerdict(off,amount){
+  const pers=off.pers||"chill";
+  const ask=Math.max(120,off.ask||600);
+  const tol=(TOLERANCE[pers]||1.05)*(1+(S.skills.comms-3)*0.03);
+  if(amount<=ask*tol) return {kind:"accept"};
+  const counter=Math.round((ask*(COUNTER_MULT[pers]||0.88))/10)*10;
+  if(counter>=Math.round(amount*0.6) && counter<amount) return {kind:"counter",counter};
+  return {kind:"decline"};
+}
+
 /* ---------- negotiation (slider + typeable amount, single-fire) ---------- */
 function openNegotiation(off){
   const suggested=Math.round(off.ask/10)*10;
@@ -1697,7 +1710,7 @@ function openNegotiation(off){
     send.dataset.sent="1";
     const amount=clamp(parseInt(num.value,10)||suggested,100,999999);
     const wantDeposit=$("#qDeposit").checked;
-    const v=quoteVerdict(off,amount);
+    let v; try{ v=quoteVerdict(off,amount); }catch(e){ console.error(e); toast("Something hiccuped. Try that quote again.","warn"); send.dataset.sent=""; return; }
     SFX.click();
     if(v.kind==="decline"){
       closeModal();
