@@ -16,7 +16,21 @@ function freshState(){
   };
 }
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(!r) return false; S=JSON.parse(r); return !!S; }catch(e){ return false; } }
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY); if(!r) return false;
+    S=JSON.parse(r);
+    (S.projects||[]).forEach(p=>{
+      (p.features||[]).forEach(f=>{ if(typeof f.size!=="number") f.size=100; });
+      if(!p.offer.size) p.offer.size="standard";
+    });
+    (S.offers||[]).forEach(o=>{
+      (o.feats||[]).forEach(f=>{ if(typeof f.size!=="number") f.size=100; });
+      if(!o.size) o.size="standard";
+    });
+    return !!S;
+  }catch(e){ return false; }
+}
 function hasSave(){ try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } }
 function wipeSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
 
@@ -100,6 +114,16 @@ function avgSkillFit(cat){
   if(!ks.length) return 3;
   return ks.reduce((a,k)=>a+S.skills[k],0)/ks.length;
 }
+const EXTRA_FILES=["Utility helpers","Error handling","Logging setup","Caching layer","API endpoints","Database migrations","Admin dashboard","Email notifications","Export to CSV","Search and filters","Settings page","Onboarding flow","Rate limiting","Unit test suite","Dark mode","Webhook handlers","Audit trail","Pagination"];
+const SIZE_LABEL={tiny:"tiny build",small:"small build",standard:"standard build",large:"big build",enterprise:"monster build"};
+function fileSizeLabel(sz){
+  if(!sz) return "normal";
+  if(sz<70) return "quick";
+  if(sz<120) return "normal";
+  if(sz<180) return "chunky";
+  if(sz<250) return "big";
+  return "brutal";
+}
 function computePay(cat, client, diff, skillFit){
   let base=cat.base*(0.8+diff*0.12);
   base*=client.budgetMult;
@@ -115,14 +139,29 @@ function genOffer(silent){
   const diff=rnd(cat.diff[0],cat.diff[1]);
   const skillFit=avgSkillFit(cat);
   const ask=computePay(cat,c,diff,skillFit);
-  const featCount=clamp(Math.round(rnd(3.4,5.6)+diff*0.4),3,6);
-  const feats=shuffle(cat.feats).slice(0,featCount).map(nm=>({name:nm,diff:clamp(Math.round(diff*rnd(.7,1.3)),1,6)}));
+  const sr=Math.random();
+  const size=sr<0.15?"tiny":sr<0.40?"small":sr<0.72?"standard":sr<0.90?"large":"enterprise";
+  const sizeMult=size==="tiny"?0.55:size==="small"?0.75:size==="standard"?1:size==="large"?1.45:1.9;
+  const featCount=clamp(Math.round((rnd(2.6,6.2)+diff*0.3)*sizeMult),2,12);
+  let pool=shuffle(cat.feats);
+  if(featCount>pool.length){
+    const extra=shuffle(EXTRA_FILES).filter(nm=>pool.indexOf(nm)<0);
+    pool=pool.concat(extra);
+  }
+  const feats=pool.slice(0,featCount).map(nm=>{
+    const fsize=Math.round(100*(0.6+Math.random()*0.9)*sizeMult);
+    return {name:nm,diff:clamp(Math.round(diff*rnd(.7,1.3)),1,6),size:clamp(fsize,45,320)};
+  });
+  const workUnits=featCount*sizeMult;
+  const wMult=clamp(Math.sqrt(workUnits/4.5),0.65,2.6);
+  const ask2=Math.max(300, Math.round(ask*wMult/10)*10);
+  const days=clamp(Math.round(rndi(cat.days[0],cat.days[1])*clamp(Math.sqrt(workUnits/4.5),0.65,2.2)),2,21);
   const brief=pickBrief(cat, c);
   const off={
     id:nid(), client:c, catId:cat.id, catName:cat.name, blurb:cat.blurb||"",
     title:cat.name+" for "+c.company,
     brief:c.name.split(" ")[0]+" from "+c.company+" ("+c.industry+") "+brief+".",
-    ask, days:rndi(cat.days[0],cat.days[1]), diff:Math.round(diff*10)/10, feats,
+    ask:ask2, days, diff:Math.round(diff*10)/10, feats, size,
     createdDay:S.day, pers:c.pers, req:cat.sk, hot:isHot(cat.id),
   };
   S.offers.push(off);

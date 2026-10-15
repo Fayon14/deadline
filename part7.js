@@ -63,6 +63,8 @@ function renderInbox(){
         ${persTag(o.pers)}
         <span class="tag info">difficulty ${o.diff}</span>
         <span class="tag">deadline ${o.days}d</span>
+        <span class="tag">${o.feats.length} file${o.feats.length===1?"":"s"}</span>
+        ${o.size?`<span class="tag">${SIZE_LABEL[o.size]||o.size}</span>`:""}
         <span class="tag warn">pays net ${c.netDays}</span>
         <span class="tag ${exp<=3?"bad":""}">expires in ${exp}d</span>
       </div>
@@ -87,8 +89,8 @@ function featRow(f,i,p){
   return `<div class="feat ${f.done?"done":""}">
     <div class="ic">${f.done?"✓":(i+1)}</div>
     <div style="flex:1">
-      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span>`}</div>
-      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${f.prog}%"></i></div>
+      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span><span class="tag">${fileSizeLabel(f.size)} file</span>`}</div>
+      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${Math.round(f.prog/(f.size||100)*100)}%"></i></div>
     </div>
     ${!f.done&&p.phase==="dev"?`<button class="btn sm ${canWork?"primary":""}" data-work="${p.id}:${i}" ${canWork?"":"disabled"}>Work</button>`:""}
   </div>`;
@@ -96,7 +98,8 @@ function featRow(f,i,p){
 function projectCard(p){
   const due=p.offer.createdDay+p.offer.days;
   const left=due-S.day+1;
-  const totalProg=Math.round(p.features.reduce((a,f)=>a+f.prog,0)/p.features.length);
+  const tpSum=p.features.reduce((a,f)=>a+f.prog,0), tsSum=p.features.reduce((a,f)=>a+(f.size||100),0);
+  const totalProg=tsSum?Math.round(tpSum/tsSum*100):0;
   let h=`<div class="card">
     <div class="spread"><div><h3>${esc(p.offer.title)}</h3>
       <div class="meta">${esc(p.client.name)} · ${esc(p.client.company)} · ${esc(p.offer.blurb||p.offer.catName)}</div></div>
@@ -106,10 +109,12 @@ function projectCard(p){
     <div class="row" style="margin-top:10px">
       <span class="tag ${left<=2?"bad":left<=4?"warn":"info"}">${left<=0?"deadline blown":left+" day"+(left===1?"":"s")+" to deadline"}</span>
       <span class="tag">phase: ${p.phase}</span>
+      ${p.offer.size?`<span class="tag">${p.features.length} file${p.features.length===1?"":"s"} · ${SIZE_LABEL[p.offer.size]||p.offer.size}</span>`:""}
       <span class="tag">energy ${Math.round(S.energy)}/100</span>
       ${S.inspired?'<span class="tag gold">inspired: next session +25%</span>':""}
     </div>
     <div class="bar" style="margin:12px 0"><i class="fill-acc2" style="width:${totalProg}%"></i></div>
+    ${p.phase==="dev"&&p.features.some(f=>!f.done)?(()=>{const ni=p.features.findIndex(f=>!f.done);return `<div class="row" style="margin-top:8px"><button class="btn primary sm" data-work="${p.id}:${ni}" ${canWorkNow()?"":"disabled"}>Code next file: ${esc(p.features[ni].name)}</button></div>`;})():""}
     <div>${p.features.map((f,i)=>featRow(f,i,p)).join("")}</div>`;
   if(p.phase==="test"||p.bugs.length){
     h+=`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><h3>Quality control</h3>`;

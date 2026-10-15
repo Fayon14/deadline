@@ -11,7 +11,7 @@ function startProject(off, quote, depositAgreed, depositPaid){
   off.client.history.push(off.catId);
   const proj={
     id:nid(), offer:off, client:off.client, quote, depositAgreed, depositPaid,
-    features:off.feats.map(f=>({name:f.name, diff:f.diff, prog:0, done:false})),
+    features:off.feats.map(f=>({name:f.name, diff:f.diff, size:f.size||100, prog:0, done:false})),
     hiddenBugs:0, bugs:[], phase:"dev", startedDay:S.day,
     qualityScore:0, late:false, absorbedRevision:false,
   };
@@ -47,16 +47,15 @@ function openWorkSession(pid, fi){
   const p=P(pid); if(!p||p.phase!=="dev") return;
   if(S.skipWork){ toast("You're done for today. Sleep.","warn"); return; }
   if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee, an energy drink, or sleep.","warn"); SFX.warn(); return; }
-  if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee or sleep.","warn"); SFX.warn(); return; }
   const feat=p.features[fi];
   const target=makeSnippet();
-  TY={pid, fi, target, typed:"", done:false, correct:0, mistakes:0};
+  TY={pid, fi, target, typed:"", done:false, correct:0, mistakes:0, keys:0};
   openModal(`
-    <h3>Work session: ${esc(feat.name)}</h3>
-    <p class="meta">No timer. Type the code below at your own pace. Accuracy builds the feature; sloppiness builds bugs.</p>
+    <h3>Work session: ${esc(feat.name)} <span class="meta faint">file ${fi+1}/${p.features.length} · ${esc(p.offer.title)}</span></h3>
+    <p class="meta">No timer. Tab indents the current line like a real editor. Every typo stays on your record even after you fix it, so type clean the first time.</p>
     <div class="tybar">
       <div id="tyTimer"><i style="width:0%"></i></div>
-      <div class="tystat"><span>accuracy <b id="tyAcc">100%</b></span><span>progress <b id="tyProg">0%</b></span></div>
+      <div class="tystat"><span>accuracy <b id="tyAcc">100%</b></span><span>typos <b id="tyMis">0</b></span><span>progress <b id="tyProg">0%</b></span></div>
     </div>
     <div id="tyTarget">${renderTarget(target,"")}</div>
     <textarea id="tyInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="type here..."></textarea>
@@ -65,6 +64,12 @@ function openWorkSession(pid, fi){
   const inp=$("#tyInput");
   setTimeout(()=>inp.focus(),50);
   inp.addEventListener("input", onType);
+  inp.addEventListener("keydown",function(e){
+    if(!TY||TY.done||e.key!=="Tab") return;
+    e.preventDefault();
+    tabInsert(inp);
+    onType();
+  });
   $("#tyQuit").onclick=()=>{ endType(false); };
 }
 function renderTarget(target, typed){
@@ -82,26 +87,53 @@ function renderTarget(target, typed){
 function onType(){
   if(!TY||TY.done) return;
   const inp=$("#tyInput");
-  TY.typed=inp.value;
+  const nv=inp.value, old=TY.typed;
+  let s=0; while(s<old.length&&s<nv.length&&old[s]===nv[s]) s++;
+  let e=0; while(e<old.length-s&&e<nv.length-s&&old[old.length-1-e]===nv[nv.length-1-e]) e++;
+  const added=nv.length-s-e;
+  for(let i=0;i<added;i++){ TY.keys++; if(nv[s+i]!==TY.target[s+i]) TY.mistakes++; }
+  TY.typed=nv;
   TY.correct=0;
-  for(let i=0;i<TY.typed.length;i++){ if(TY.typed[i]===TY.target[i]) TY.correct++; }
+  for(let i=0;i<nv.length;i++){ if(nv[i]===TY.target[i]) TY.correct++; }
   const len=TY.target.length;
-  const pct=Math.round(TY.typed.length/len*100);
-  const acc=Math.round(TY.correct/Math.max(1,TY.typed.length)*100);
+  const pct=Math.min(100,Math.round(nv.length/len*100));
+  const acc=Math.round(typeAcc()*100);
   const st=$("#tyAcc"); if(st) st.textContent=acc+"%";
+  const ms=$("#tyMis"); if(ms) ms.textContent=TY.mistakes;
   const pr=$("#tyProg"); if(pr) pr.textContent=pct+"%";
   const tt=$("#tyTarget"); if(tt){ tt.innerHTML=renderTarget(TY.target,TY.typed); tt.scrollTop=tt.scrollHeight*0.6; }
   const bar=$("#tyTimer i"); if(bar) bar.style.width=pct+"%";
   if(chance(.3)) SFX.type();
-  if(TY.typed.length>=len){ endType(true); }
+  if(nv.length>=len){ endType(true); }
+}
+function typeAcc(){
+  if(!TY) return 1;
+  const denom=TY.correct+TY.mistakes;
+  return denom?clamp(TY.correct/denom,0,1):1;
+}
+function tabInsert(inp){
+  if(!TY) return;
+  const v=inp.value, cs=inp.selectionStart||0, ce=inp.selectionEnd||cs;
+  const lineStart=v.lastIndexOf("\n",cs-1)+1;
+  let ins="  ";
+  const tLines=TY.target.split("\n");
+  const li=v.slice(0,lineStart).split("\n").length-1;
+  if(tLines[li]&&!v.slice(lineStart,cs).trim()){
+    const lead=(tLines[li].match(/^[ \t]*/)||[""])[0];
+    if(lead) ins=lead;
+  }
+  inp.value=v.slice(0,cs)+ins+v.slice(ce);
+  inp.selectionStart=inp.selectionEnd=cs+ins.length;
 }
 function endType(finished){
   if(!TY||TY.done) return;
   TY.done=true;
   const p=P(TY.pid), feat=p.features[TY.fi];
-  const acc=clamp(TY.correct/Math.max(1,TY.typed.length||TY.target.length),0,1);
+  const acc=typeAcc();
+  const typos=TY.mistakes;
   const gain=Math.round(sessionGain(feat,acc)*(finished?1:0.5));
-  feat.prog=clamp(feat.prog+gain,0,100);
+  const fmax=feat.size||100;
+  feat.prog=clamp(feat.prog+gain,0,fmax);
   spendEnergy(SESSION_COST);
   S.sessionsToday++;
   let bugTxt="";
@@ -109,10 +141,11 @@ function endType(finished){
     p.hiddenBugs++;
     bugTxt=" ...and you left a bug in there.";
   }
+  if(typos>0) bugTxt+=" ("+typos+" typo"+(typos===1?"":"s")+" on record)";
   TY=null;
   closeModal();
   SFX.click();
-  if(feat.prog>=100){
+  if(feat.prog>=fmax){
     feat.done=true;
     log("Feature complete: "+feat.name+" ("+p.offer.title+")","good");
     toast("Feature shipped: "+feat.name,"good");

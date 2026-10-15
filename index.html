@@ -596,7 +596,21 @@ function freshState(){
   };
 }
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
-function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(!r) return false; S=JSON.parse(r); return !!S; }catch(e){ return false; } }
+function load(){
+  try{
+    const r=localStorage.getItem(SAVE_KEY); if(!r) return false;
+    S=JSON.parse(r);
+    (S.projects||[]).forEach(p=>{
+      (p.features||[]).forEach(f=>{ if(typeof f.size!=="number") f.size=100; });
+      if(!p.offer.size) p.offer.size="standard";
+    });
+    (S.offers||[]).forEach(o=>{
+      (o.feats||[]).forEach(f=>{ if(typeof f.size!=="number") f.size=100; });
+      if(!o.size) o.size="standard";
+    });
+    return !!S;
+  }catch(e){ return false; }
+}
 function hasSave(){ try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } }
 function wipeSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
 
@@ -680,6 +694,16 @@ function avgSkillFit(cat){
   if(!ks.length) return 3;
   return ks.reduce((a,k)=>a+S.skills[k],0)/ks.length;
 }
+const EXTRA_FILES=["Utility helpers","Error handling","Logging setup","Caching layer","API endpoints","Database migrations","Admin dashboard","Email notifications","Export to CSV","Search and filters","Settings page","Onboarding flow","Rate limiting","Unit test suite","Dark mode","Webhook handlers","Audit trail","Pagination"];
+const SIZE_LABEL={tiny:"tiny build",small:"small build",standard:"standard build",large:"big build",enterprise:"monster build"};
+function fileSizeLabel(sz){
+  if(!sz) return "normal";
+  if(sz<70) return "quick";
+  if(sz<120) return "normal";
+  if(sz<180) return "chunky";
+  if(sz<250) return "big";
+  return "brutal";
+}
 function computePay(cat, client, diff, skillFit){
   let base=cat.base*(0.8+diff*0.12);
   base*=client.budgetMult;
@@ -695,14 +719,29 @@ function genOffer(silent){
   const diff=rnd(cat.diff[0],cat.diff[1]);
   const skillFit=avgSkillFit(cat);
   const ask=computePay(cat,c,diff,skillFit);
-  const featCount=clamp(Math.round(rnd(3.4,5.6)+diff*0.4),3,6);
-  const feats=shuffle(cat.feats).slice(0,featCount).map(nm=>({name:nm,diff:clamp(Math.round(diff*rnd(.7,1.3)),1,6)}));
+  const sr=Math.random();
+  const size=sr<0.15?"tiny":sr<0.40?"small":sr<0.72?"standard":sr<0.90?"large":"enterprise";
+  const sizeMult=size==="tiny"?0.55:size==="small"?0.75:size==="standard"?1:size==="large"?1.45:1.9;
+  const featCount=clamp(Math.round((rnd(2.6,6.2)+diff*0.3)*sizeMult),2,12);
+  let pool=shuffle(cat.feats);
+  if(featCount>pool.length){
+    const extra=shuffle(EXTRA_FILES).filter(nm=>pool.indexOf(nm)<0);
+    pool=pool.concat(extra);
+  }
+  const feats=pool.slice(0,featCount).map(nm=>{
+    const fsize=Math.round(100*(0.6+Math.random()*0.9)*sizeMult);
+    return {name:nm,diff:clamp(Math.round(diff*rnd(.7,1.3)),1,6),size:clamp(fsize,45,320)};
+  });
+  const workUnits=featCount*sizeMult;
+  const wMult=clamp(Math.sqrt(workUnits/4.5),0.65,2.6);
+  const ask2=Math.max(300, Math.round(ask*wMult/10)*10);
+  const days=clamp(Math.round(rndi(cat.days[0],cat.days[1])*clamp(Math.sqrt(workUnits/4.5),0.65,2.2)),2,21);
   const brief=pickBrief(cat, c);
   const off={
     id:nid(), client:c, catId:cat.id, catName:cat.name, blurb:cat.blurb||"",
     title:cat.name+" for "+c.company,
     brief:c.name.split(" ")[0]+" from "+c.company+" ("+c.industry+") "+brief+".",
-    ask, days:rndi(cat.days[0],cat.days[1]), diff:Math.round(diff*10)/10, feats,
+    ask:ask2, days, diff:Math.round(diff*10)/10, feats, size,
     createdDay:S.day, pers:c.pers, req:cat.sk, hot:isHot(cat.id),
   };
   S.offers.push(off);
@@ -930,7 +969,7 @@ function startProject(off, quote, depositAgreed, depositPaid){
   off.client.history.push(off.catId);
   const proj={
     id:nid(), offer:off, client:off.client, quote, depositAgreed, depositPaid,
-    features:off.feats.map(f=>({name:f.name, diff:f.diff, prog:0, done:false})),
+    features:off.feats.map(f=>({name:f.name, diff:f.diff, size:f.size||100, prog:0, done:false})),
     hiddenBugs:0, bugs:[], phase:"dev", startedDay:S.day,
     qualityScore:0, late:false, absorbedRevision:false,
   };
@@ -966,16 +1005,15 @@ function openWorkSession(pid, fi){
   const p=P(pid); if(!p||p.phase!=="dev") return;
   if(S.skipWork){ toast("You're done for today. Sleep.","warn"); return; }
   if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee, an energy drink, or sleep.","warn"); SFX.warn(); return; }
-  if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee or sleep.","warn"); SFX.warn(); return; }
   const feat=p.features[fi];
   const target=makeSnippet();
-  TY={pid, fi, target, typed:"", done:false, correct:0, mistakes:0};
+  TY={pid, fi, target, typed:"", done:false, correct:0, mistakes:0, keys:0};
   openModal(`
-    <h3>Work session: ${esc(feat.name)}</h3>
-    <p class="meta">No timer. Type the code below at your own pace. Accuracy builds the feature; sloppiness builds bugs.</p>
+    <h3>Work session: ${esc(feat.name)} <span class="meta faint">file ${fi+1}/${p.features.length} · ${esc(p.offer.title)}</span></h3>
+    <p class="meta">No timer. Tab indents the current line like a real editor. Every typo stays on your record even after you fix it, so type clean the first time.</p>
     <div class="tybar">
       <div id="tyTimer"><i style="width:0%"></i></div>
-      <div class="tystat"><span>accuracy <b id="tyAcc">100%</b></span><span>progress <b id="tyProg">0%</b></span></div>
+      <div class="tystat"><span>accuracy <b id="tyAcc">100%</b></span><span>typos <b id="tyMis">0</b></span><span>progress <b id="tyProg">0%</b></span></div>
     </div>
     <div id="tyTarget">${renderTarget(target,"")}</div>
     <textarea id="tyInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="type here..."></textarea>
@@ -984,6 +1022,12 @@ function openWorkSession(pid, fi){
   const inp=$("#tyInput");
   setTimeout(()=>inp.focus(),50);
   inp.addEventListener("input", onType);
+  inp.addEventListener("keydown",function(e){
+    if(!TY||TY.done||e.key!=="Tab") return;
+    e.preventDefault();
+    tabInsert(inp);
+    onType();
+  });
   $("#tyQuit").onclick=()=>{ endType(false); };
 }
 function renderTarget(target, typed){
@@ -1001,26 +1045,53 @@ function renderTarget(target, typed){
 function onType(){
   if(!TY||TY.done) return;
   const inp=$("#tyInput");
-  TY.typed=inp.value;
+  const nv=inp.value, old=TY.typed;
+  let s=0; while(s<old.length&&s<nv.length&&old[s]===nv[s]) s++;
+  let e=0; while(e<old.length-s&&e<nv.length-s&&old[old.length-1-e]===nv[nv.length-1-e]) e++;
+  const added=nv.length-s-e;
+  for(let i=0;i<added;i++){ TY.keys++; if(nv[s+i]!==TY.target[s+i]) TY.mistakes++; }
+  TY.typed=nv;
   TY.correct=0;
-  for(let i=0;i<TY.typed.length;i++){ if(TY.typed[i]===TY.target[i]) TY.correct++; }
+  for(let i=0;i<nv.length;i++){ if(nv[i]===TY.target[i]) TY.correct++; }
   const len=TY.target.length;
-  const pct=Math.round(TY.typed.length/len*100);
-  const acc=Math.round(TY.correct/Math.max(1,TY.typed.length)*100);
+  const pct=Math.min(100,Math.round(nv.length/len*100));
+  const acc=Math.round(typeAcc()*100);
   const st=$("#tyAcc"); if(st) st.textContent=acc+"%";
+  const ms=$("#tyMis"); if(ms) ms.textContent=TY.mistakes;
   const pr=$("#tyProg"); if(pr) pr.textContent=pct+"%";
   const tt=$("#tyTarget"); if(tt){ tt.innerHTML=renderTarget(TY.target,TY.typed); tt.scrollTop=tt.scrollHeight*0.6; }
   const bar=$("#tyTimer i"); if(bar) bar.style.width=pct+"%";
   if(chance(.3)) SFX.type();
-  if(TY.typed.length>=len){ endType(true); }
+  if(nv.length>=len){ endType(true); }
+}
+function typeAcc(){
+  if(!TY) return 1;
+  const denom=TY.correct+TY.mistakes;
+  return denom?clamp(TY.correct/denom,0,1):1;
+}
+function tabInsert(inp){
+  if(!TY) return;
+  const v=inp.value, cs=inp.selectionStart||0, ce=inp.selectionEnd||cs;
+  const lineStart=v.lastIndexOf("\n",cs-1)+1;
+  let ins="  ";
+  const tLines=TY.target.split("\n");
+  const li=v.slice(0,lineStart).split("\n").length-1;
+  if(tLines[li]&&!v.slice(lineStart,cs).trim()){
+    const lead=(tLines[li].match(/^[ \t]*/)||[""])[0];
+    if(lead) ins=lead;
+  }
+  inp.value=v.slice(0,cs)+ins+v.slice(ce);
+  inp.selectionStart=inp.selectionEnd=cs+ins.length;
 }
 function endType(finished){
   if(!TY||TY.done) return;
   TY.done=true;
   const p=P(TY.pid), feat=p.features[TY.fi];
-  const acc=clamp(TY.correct/Math.max(1,TY.typed.length||TY.target.length),0,1);
+  const acc=typeAcc();
+  const typos=TY.mistakes;
   const gain=Math.round(sessionGain(feat,acc)*(finished?1:0.5));
-  feat.prog=clamp(feat.prog+gain,0,100);
+  const fmax=feat.size||100;
+  feat.prog=clamp(feat.prog+gain,0,fmax);
   spendEnergy(SESSION_COST);
   S.sessionsToday++;
   let bugTxt="";
@@ -1028,10 +1099,11 @@ function endType(finished){
     p.hiddenBugs++;
     bugTxt=" ...and you left a bug in there.";
   }
+  if(typos>0) bugTxt+=" ("+typos+" typo"+(typos===1?"":"s")+" on record)";
   TY=null;
   closeModal();
   SFX.click();
-  if(feat.prog>=100){
+  if(feat.prog>=fmax){
     feat.done=true;
     log("Feature complete: "+feat.name+" ("+p.offer.title+")","good");
     toast("Feature shipped: "+feat.name,"good");
@@ -1430,6 +1502,8 @@ function renderInbox(){
         ${persTag(o.pers)}
         <span class="tag info">difficulty ${o.diff}</span>
         <span class="tag">deadline ${o.days}d</span>
+        <span class="tag">${o.feats.length} file${o.feats.length===1?"":"s"}</span>
+        ${o.size?`<span class="tag">${SIZE_LABEL[o.size]||o.size}</span>`:""}
         <span class="tag warn">pays net ${c.netDays}</span>
         <span class="tag ${exp<=3?"bad":""}">expires in ${exp}d</span>
       </div>
@@ -1454,8 +1528,8 @@ function featRow(f,i,p){
   return `<div class="feat ${f.done?"done":""}">
     <div class="ic">${f.done?"✓":(i+1)}</div>
     <div style="flex:1">
-      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span>`}</div>
-      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${f.prog}%"></i></div>
+      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span><span class="tag">${fileSizeLabel(f.size)} file</span>`}</div>
+      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${Math.round(f.prog/(f.size||100)*100)}%"></i></div>
     </div>
     ${!f.done&&p.phase==="dev"?`<button class="btn sm ${canWork?"primary":""}" data-work="${p.id}:${i}" ${canWork?"":"disabled"}>Work</button>`:""}
   </div>`;
@@ -1463,7 +1537,8 @@ function featRow(f,i,p){
 function projectCard(p){
   const due=p.offer.createdDay+p.offer.days;
   const left=due-S.day+1;
-  const totalProg=Math.round(p.features.reduce((a,f)=>a+f.prog,0)/p.features.length);
+  const tpSum=p.features.reduce((a,f)=>a+f.prog,0), tsSum=p.features.reduce((a,f)=>a+(f.size||100),0);
+  const totalProg=tsSum?Math.round(tpSum/tsSum*100):0;
   let h=`<div class="card">
     <div class="spread"><div><h3>${esc(p.offer.title)}</h3>
       <div class="meta">${esc(p.client.name)} · ${esc(p.client.company)} · ${esc(p.offer.blurb||p.offer.catName)}</div></div>
@@ -1473,10 +1548,12 @@ function projectCard(p){
     <div class="row" style="margin-top:10px">
       <span class="tag ${left<=2?"bad":left<=4?"warn":"info"}">${left<=0?"deadline blown":left+" day"+(left===1?"":"s")+" to deadline"}</span>
       <span class="tag">phase: ${p.phase}</span>
+      ${p.offer.size?`<span class="tag">${p.features.length} file${p.features.length===1?"":"s"} · ${SIZE_LABEL[p.offer.size]||p.offer.size}</span>`:""}
       <span class="tag">energy ${Math.round(S.energy)}/100</span>
       ${S.inspired?'<span class="tag gold">inspired: next session +25%</span>':""}
     </div>
     <div class="bar" style="margin:12px 0"><i class="fill-acc2" style="width:${totalProg}%"></i></div>
+    ${p.phase==="dev"&&p.features.some(f=>!f.done)?(()=>{const ni=p.features.findIndex(f=>!f.done);return `<div class="row" style="margin-top:8px"><button class="btn primary sm" data-work="${p.id}:${ni}" ${canWorkNow()?"":"disabled"}>Code next file: ${esc(p.features[ni].name)}</button></div>`;})():""}
     <div>${p.features.map((f,i)=>featRow(f,i,p)).join("")}</div>`;
   if(p.phase==="test"||p.bugs.length){
     h+=`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><h3>Quality control</h3>`;
