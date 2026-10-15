@@ -1086,10 +1086,15 @@ function tabInsert(inp){
 function endType(finished){
   if(!TY||TY.done) return;
   TY.done=true;
+  if(!finished){
+    TY=null; closeModal(); SFX.click();
+    toast("Gave up. Nothing recorded.","warn");
+    return;
+  }
   const p=P(TY.pid), feat=p.features[TY.fi];
   const acc=typeAcc();
   const typos=TY.mistakes;
-  const gain=Math.round(sessionGain(feat,acc)*(finished?1:0.5));
+  const gain=Math.round(sessionGain(feat,acc));
   const fmax=feat.size||100;
   feat.prog=clamp(feat.prog+gain,0,fmax);
   spendEnergy(SESSION_COST);
