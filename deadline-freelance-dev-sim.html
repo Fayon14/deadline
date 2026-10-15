@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEADLINE: Freelance Dev Sim</title>
+<style>
+:root{
+  --bg:#0a0d14; --panel:#121826; --panel2:#0d1220; --line:#243049;
+  --ink:#dce6f8; --dim:#8ba0c4; --faint:#5b6c8f;
+  --acc:#5ef2a0; --acc2:#8f7bff; --warn:#ffb454; --bad:#ff6b6b; --gold:#ffd166; --blue:#6fb3ff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;overflow-x:hidden}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.btn{display:inline-block;padding:9px 18px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font-weight:600;letter-spacing:.02em;transition:all .15s ease;user-select:none}
+.btn:hover{border-color:var(--acc);color:var(--acc);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:linear-gradient(135deg,#1d8f5c,#25b874);border-color:#2bd684;color:#04130b}
+.btn.primary:hover{color:#04130b;filter:brightness(1.12)}
+.btn.danger{border-color:#5c2b33;color:#ff9b9b}
+.btn.danger:hover{border-color:var(--bad);color:var(--bad)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:5px 12px;font-size:13px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.hidden{display:none!important}
+
+/* ---------- intro ---------- */
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 120%,#152036 0%,#0a0d14 60%)}
+#introCanvas{position:absolute;inset:0;width:100%;height:100%}
+.intro-inner{position:relative;z-index:2;text-align:center;padding:20px;animation:rise .9s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+#gameTitle{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:clamp(44px,9vw,86px);font-weight:800;letter-spacing:.14em;color:#fff;text-shadow:0 0 24px rgba(94,242,160,.45),0 0 70px rgba(143,123,255,.3);animation:flicker 4s infinite}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.6}94%{opacity:1}97%{opacity:.85}98%{opacity:1}}
+#gameSub{margin-top:6px;color:var(--dim);font-size:15px;letter-spacing:.34em;text-transform:uppercase}
+.intro-tag{margin:26px auto 34px;max-width:520px;color:var(--dim);font-size:15px;font-style:italic}
+.intro-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+#introStats{margin-top:22px;color:var(--faint);font-size:12.5px}
+
+/* ---------- topbar ---------- */
+#game{min-height:100vh;display:flex;flex-direction:column}
+#topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 18px;background:rgba(13,18,32,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+#logo{font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:800;letter-spacing:.12em;color:var(--acc);font-size:17px;cursor:pointer}
+#logo span{color:var(--acc2)}
+.stat{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--dim);white-space:nowrap}
+.stat b{color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+.stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.minibar{width:70px;height:7px;border-radius:4px;background:#1a2334;overflow:hidden}
+.minibar i{display:block;height:100%;border-radius:4px;transition:width .4s ease}
+#energyFill{background:linear-gradient(90deg,#ff6b6b,#ffd166,#5ef2a0)}
+#stressFill{background:linear-gradient(90deg,#5ef2a0,#ffd166,#ff6b6b)}
+#rankBadge{display:flex;flex-direction:column;gap:1px;min-width:130px}
+#rankBadge .rn{font-size:12.5px;font-weight:700;color:var(--acc2);letter-spacing:.04em}
+#rankBadge .bar{height:5px;margin-top:2px}
+#dayInfo{margin-left:auto;text-align:right;font-size:12.5px;color:var(--dim)}
+#dayInfo b{color:var(--ink);font-size:14px}
+.day-actions{display:flex;gap:8px;align-items:center}
+
+/* ---------- tabs ---------- */
+#tabs{display:flex;gap:4px;padding:8px 14px 0;flex-wrap:wrap}
+.tab{padding:9px 20px;border:1px solid transparent;border-bottom:none;border-radius:9px 9px 0 0;color:var(--dim);font-weight:600;font-size:14px;position:relative;transition:all .15s}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--acc);background:var(--panel);border-color:var(--line)}
+.tab .dot{position:absolute;top:7px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px var(--warn);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tab .key{font-size:10px;color:var(--faint);margin-left:6px}
+main{flex:1;padding:16px 18px 30px;background:linear-gradient(180deg,var(--panel) 0%,var(--bg) 240px);min-height:60vh}
+.panel{max-width:1080px;margin:0 auto}
+h2.ph{font-size:19px;margin:2px 0 14px;letter-spacing:.02em}
+h2.ph small{color:var(--faint);font-weight:400;font-size:12.5px;margin-left:10px}
+
+/* ---------- cards ---------- */
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px;transition:border-color .2s,transform .15s}
+.card:hover{border-color:#334263}
+.card h3{font-size:16px;margin-bottom:4px}
+.card.offer{border-left:3px solid var(--acc2)}
+.card.offer:hover{transform:translateY(-1px);border-color:#44538a;border-left-color:var(--acc2)}
+.meta{color:var(--dim);font-size:13px}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--dim);letter-spacing:.04em}
+.tag.good{color:var(--acc);border-color:#2a5c42}
+.tag.warn{color:var(--warn);border-color:#5c4a2b}
+.tag.bad{color:var(--bad);border-color:#5c2b33}
+.tag.info{color:var(--blue);border-color:#2b455c}
+.tag.gold{color:var(--gold);border-color:#5c522b}
+.tag.hot{color:#ff9de2;border-color:#5c2b4d;animation:pulse 2s infinite}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spread{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pay{color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+.faint{color:var(--faint)} .green{color:var(--acc)} .red{color:var(--bad)}
+.empty{padding:44px 20px;text-align:center;color:var(--faint);border:1px dashed var(--line);border-radius:12px;font-size:14px}
+
+/* ---------- bars & stars ---------- */
+.bar{height:10px;border-radius:6px;background:#1a2334;overflow:hidden;flex:1;min-width:60px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .35s ease}
+.fill-acc{background:linear-gradient(90deg,#1d8f5c,#5ef2a0)}
+.fill-acc2{background:linear-gradient(90deg,#4a3d99,#8f7bff)}
+.fill-gold{background:linear-gradient(90deg,#8f6b1d,#ffd166)}
+.stars{color:var(--gold);letter-spacing:2px;font-size:14px}
+.stars .off{color:#3a465f}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.1em;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid #1a2334}
+tr:last-child td{border-bottom:none}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- modal ---------- */
+#modalRoot{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(4,7,12,.78);backdrop-filter:blur(4px);padding:16px}
+#modalRoot.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:680px;width:100%;max-height:88vh;overflow-y:auto;padding:22px 24px;animation:pop .22s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal h3{font-size:18px;margin-bottom:10px}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.field{margin:12px 0}
+.field label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);margin-bottom:5px}
+.field input[type=number],.field input[type=text],.field select,.field textarea{width:100%;padding:9px 12px;background:#0b0f1a;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:14px;outline:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--acc2)}
+.range{width:100%;accent-color:var(--acc)}
+.hint{font-size:12.5px;color:var(--faint);margin-top:4px}
+.chopt{display:block;width:100%;text-align:left;padding:12px 15px;margin:7px 0;border:1px solid var(--line);border-radius:9px;background:#0b0f1a;font-size:13.5px;transition:all .15s}
+.chopt:hover{border-color:var(--acc2);transform:translateX(2px)}
+.chopt.right{border-color:var(--acc);color:var(--acc)}
+.chopt.wrong{border-color:var(--bad);color:var(--bad)}
+.chopt:disabled{cursor:default;opacity:.9}
+
+/* ---------- typing challenge ---------- */
+#tyTarget{background:#070a11;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;line-height:1.75;white-space:pre-wrap;word-break:break-all;margin:10px 0;max-height:240px;overflow:auto}
+#tyTarget .done{color:var(--acc)}
+#tyTarget .cur{background:var(--acc2);color:#fff;border-radius:2px}
+#tyTarget .err{color:var(--bad);background:#3b1219;border-radius:2px}
+#tyInput{width:100%;min-height:120px;resize:vertical;background:#0b0f1a;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13.5px;padding:10px 12px;outline:none}
+#tyInput:focus{border-color:var(--acc)}
+.tybar{display:flex;align-items:center;gap:12px;margin:8px 0}
+#tyTimer{flex:1;height:8px;border-radius:5px;background:#1a2334;overflow:hidden}
+#tyTimer i{display:block;height:100%;background:linear-gradient(90deg,#5ef2a0,#ffd166,#ff6b6b)}
+.tystat{font-size:13px;color:var(--dim);white-space:nowrap;display:flex;gap:12px}
+.tystat b{color:var(--ink)}
+.combo{color:var(--acc2);font-weight:700}
+
+/* ---------- toasts & log ---------- */
+#toasts{position:fixed;bottom:18px;right:18px;z-index:70;display:flex;flex-direction:column;gap:9px;max-width:340px}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:11px 15px;font-size:13.5px;animation:tin .3s ease both;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.toast.warn{border-left-color:var(--warn)}
+.toast.bad{border-left-color:var(--bad)}
+.toast.gold{border-left-color:var(--gold)}
+@keyframes tin{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.toast.out{animation:tout .3s ease both}
+@keyframes tout{to{opacity:0;transform:translateX(30px)}}
+#logWrap{border-top:1px solid var(--line);padding:10px 18px 14px;background:var(--panel2)}
+#logWrap h4{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--faint);margin-bottom:6px}
+#log{max-height:130px;overflow-y:auto;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--dim)}
+#log .d{color:var(--faint);margin-right:8px}
+#log .good{color:var(--acc)} #log .bad{color:var(--bad)} #log .warn{color:var(--warn)} #log .gold{color:var(--gold)} #log .acc2{color:var(--acc2)}
+
+/* ---------- bank card ---------- */
+.bankcard{width:250px;min-width:210px;border-radius:14px;padding:14px 16px;color:#fff;background:linear-gradient(135deg,#1a2f4b 0%,#2b1a4b 55%,#4b1a35 100%);border:1px solid #3a4a6b;box-shadow:0 10px 24px rgba(0,0,0,.45);transition:transform .15s}
+.bankcard:hover{transform:translateY(-2px)}
+.bc-top{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;opacity:.85}
+.bc-num{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16.5px;letter-spacing:.12em;margin:14px 0 10px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.bc-bot{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.1em;opacity:.85;text-transform:uppercase}
+.subrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a2334}
+.subrow:last-child{border-bottom:none}
+.lifegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lifebtn{border:1px solid var(--line);border-radius:10px;background:#0b0f1a;padding:10px 12px;text-align:left;font-size:13px;transition:all .15s}
+.lifebtn:hover{border-color:var(--acc);transform:translateY(-1px)}
+.lifebtn .c{color:var(--gold);font-weight:700;font-size:12px;margin-top:3px}
+.lifebtn .d{color:var(--faint);font-size:11px;margin-top:2px}
+
+/* ---------- misc ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.kpi .k{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint)}
+.avat{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#08131b;flex:none}
+.feat{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1a2334}
+.feat:last-child{border-bottom:none}
+.feat .ic{width:22px;height:22px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.feat.done .ic{background:#123b29;border-color:#2bd684;color:var(--acc)}
+.feat .nm{flex:1;font-size:13.5px}
+.scrollY{max-height:420px;overflow-y:auto}
+.ach{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#0b0f1a}
+.ach .ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;border:1px solid var(--line);filter:grayscale(1);opacity:.4}
+.ach.got .ic{filter:none;opacity:1;background:#2a2413;border-color:#5c522b}
+.ach .t{font-size:13px;font-weight:600}
+.ach .m{font-size:11.5px;color:var(--faint)}
+.ach.got{border-color:#5c522b}
+#spark{width:100%;height:70px;display:block}
+.kbd{font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+@media(max-width:760px){.grid2,.grid3,.grid4{grid-template-columns:1fr}#topbar{gap:10px}.minibar{width:50px}.day-actions{width:100%}.tab .key{display:none}}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#26314a;border-radius:5px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div id="intro">
+  <canvas id="introCanvas"></canvas>
+  <div class="intro-inner">
+    <div id="gameTitle">DEADLINE</div>
+    <div id="gameSub">freelance dev simulator</div>
+    <div class="intro-tag">Find clients. Build the thing. Send the invoice. Wait.<br>And whatever you do, don't miss the deadline.</div>
+    <div class="intro-btns">
+      <button class="btn primary" id="btnNew" style="font-size:16px;padding:12px 30px">New Game</button>
+      <button class="btn hidden" id="btnContinue" style="font-size:16px;padding:12px 30px">Continue</button>
+    </div>
+    <div id="introStats" class="mono"></div>
+  </div>
+</div>
+
+<div id="game" class="hidden">
+  <header id="topbar">
+    <div id="logo" title="back to inbox">DEAD<span>LINE</span></div>
+    <div class="stat"><span class="lbl">Cash</span><b id="stCash">$0</b></div>
+    <div class="stat"><span class="lbl">Energy</span><div class="minibar"><i id="energyFill"></i></div><b id="stEnergy">100</b></div>
+    <div class="stat"><span class="lbl">Stress</span><div class="minibar"><i id="stressFill"></i></div><b id="stStress">0</b></div>
+    <div class="stat"><span class="lbl">Rep</span><span class="stars" id="stRep"></span><b id="stRepN"></b></div>
+    <div id="rankBadge"><span class="rn" id="rankName"></span><div class="bar"><i id="rankFill" class="fill-acc2"></i></div></div>
+    <div id="dayInfo"><b id="stDay">Day 1</b> <span id="stWk">Mon</span><br><span id="stDate"></span></div>
+    <div class="day-actions">
+      <button class="btn sm" id="btnCoffee" title="caffeine now">Coffee</button>
+      <button class="btn sm" id="btnDrink" title="energy drink, 3 a day">Energy drink</button>
+      <button class="btn sm" id="btnBankTop" title="bank app, card, subscriptions">Bank</button>
+      <button class="btn sm" id="btnShop" title="upgrade your setup">Gear</button>
+      <button class="btn sm primary" id="btnSleep" title="end the day (Space)">Sleep &#9656;</button>
+    </div>
+  </header>
+  <nav id="tabs">
+    <button class="tab on" data-tab="inbox">Inbox<span class="dot hidden" id="dotInbox"></span><span class="key">1</span></button>
+    <button class="tab" data-tab="work">Work<span class="dot hidden" id="dotWork"></span><span class="key">2</span></button>
+    <button class="tab" data-tab="clients">Clients<span class="key">3</span></button>
+    <button class="tab" data-tab="money">Money<span class="dot hidden" id="dotMoney"></span><span class="key">4</span></button>
+    <button class="tab" data-tab="you">You<span class="key">5</span></button>
+  </nav>
+  <main><div class="panel">
+    <section id="tab-inbox"></section>
+    <section id="tab-work" class="hidden"></section>
+    <section id="tab-clients" class="hidden"></section>
+    <section id="tab-money" class="hidden"></section>
+    <section id="tab-you" class="hidden"></section>
+  </div></main>
+  <div id="logWrap"><h4>Terminal</h4><div id="log"></div></div>
+</div>
+
+<div id="modalRoot"><div class="modal" id="modalBox"></div></div>
+<div id="toasts"></div>
+
+<script>
+"use strict";
+/* ============================== DEADLINE v2 ==============================
+   Freelance dev simulator. Single file, no external assets.
+   ======================================================================= */
+
+/* ---------- tiny utils ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const rndi=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const chance=p=>Math.random()<p;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt$=n=>(n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+let uidc=1; const nid=()=>uidc++;
+const WEEK=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- audio ---------- */
+let AC=null, MUTED=false;
+function ac(){ if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}} return AC; }
+function beep(f,d,type,vol){
+  const c=ac(); if(!c||MUTED) return;
+  try{
+    const o=c.createOscillator(),g=c.createGain();
+    o.type=type||"sine"; o.frequency.value=f;
+    g.gain.setValueAtTime(vol||.08,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+(d||.15));
+    o.connect(g);g.connect(c.destination);
+    o.start();o.stop(c.currentTime+(d||.15));
+  }catch(e){}
+}
+const SFX={
+  click:()=>beep(660,.06,"square",.04),
+  type:()=>beep(880+rnd(-120,120),.03,"square",.015),
+  err:()=>beep(180,.12,"sawtooth",.05),
+  good:()=>{beep(523,.09,"sine",.07);setTimeout(()=>beep(784,.14,"sine",.07),90)},
+  cash:()=>{beep(880,.08,"triangle",.08);setTimeout(()=>beep(1318,.18,"triangle",.08),80)},
+  bad:()=>beep(160,.25,"sawtooth",.07),
+  warn:()=>beep(320,.15,"sine",.06),
+  levelup:()=>{[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.12,"triangle",.06),i*90))},
+  ship:()=>{[392,523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.1,"triangle",.07),i*80))},
+};
+
+/* ---------- skills & ranks ---------- */
+const SKILLS=["frontend","backend","design","devops","comms"];
+const SKILL_LABEL={frontend:"Frontend",backend:"Backend",design:"Design",devops:"DevOps",comms:"Communication"};
+const xpNeed=l=>l*90;
+const RANKS=[
+  {name:"Couch Coder",    need:{done:0, earned:0,     rep:0}},
+  {name:"Side Hustler",   need:{done:2, earned:4000,  rep:0}},
+  {name:"Proper Freelancer", need:{done:5, earned:15000, rep:3.5}},
+  {name:"In-Demand Dev",  need:{done:9, earned:40000, rep:4.0}},
+  {name:"Studio Grade",   need:{done:15,earned:90000, rep:4.3}},
+  {name:"Legend of the Invoice", need:{done:25,earned:200000,rep:4.5}},
+];
+function rankIndex(){
+  let idx=0;
+  for(let i=0;i<RANKS.length;i++){
+    const n=RANKS[i].need;
+    if(S.projectsDone>=n.done && S.totalEarned>=n.earned && S.rep>=n.rep) idx=i;
+  }
+  return idx;
+}
+function rankProgress(){
+  const i=rankIndex();
+  if(i>=RANKS.length-1) return 1;
+  const cur=RANKS[i].need, nxt=RANKS[i+1].need;
+  const p1=clamp(S.projectsDone/Math.max(1,nxt.done),0,1);
+  const p2=clamp(S.totalEarned/Math.max(1,nxt.earned),0,1);
+  const p3=nxt.rep>0?clamp((S.rep-3)/Math.max(.01,nxt.rep-3),0,1):1;
+  return (p1+p2+p3)/3;
+}
+function projectSlots(){ return rankIndex()>=2?2:1; }
+
+/* ---------- name generation (combinatorial, near-unlimited) ---------- */
+const FIRST=["Maya","Dario","Priya","Tom","Elena","Marcus","Yuki","Sofia","Jamal","Ingrid","Ravi","Chloe","Omar","Nadia","Felix","Grace","Hugo","Leila","Ben","Zoe","Andre","Carmen","Pete","Wen","Sasha","Iris","Diego","Maren","Kofi","Rosa","Nils","Amara","Jonas","Talia","Bruno","Ines","Milo","Freya","Otto","Lena","Cyrus","Dana","Ezra","Greta","Hana","Idris","June","Kenji","Lola","Mira","Noel","Opal","Pavel","Quinn","Rhea","Sami","Tove","Ula","Vera","Wes","Xio","Yara","Zane"];
+const LAST=["Okafor","Lindqvist","Marchetti","Osei","Kowalski","Reyes","Nakamura","Delgado","Bergstrom","Fontaine","Adeyemi","Novak","Silva","Haddad","Keller","Moreau","Tanaka","Weiss","Costa","Iversen","Mensah","Rossi","Vidal","Chen","Bauer","Duarte","Aliyev","Novotna","Laurent","Petrov","Ashworth","Bellamy","Castellan","Dornan","Everhart","Ferreira","Galloway","Hendricks","Ibarra","Jankowski","Kavanagh","Lindgren","Mercer","Nilsen","Oyelaran","Pemberton","Quintero","Rasmussen","Sandoval","Thornbury","Umberton","Vasquez","Whitlock","Xiang","Yamada","Zieliński","Abernathy","Bexley","Calloway","Drummond","Eastwick","Fairbanks","Grieg"];
+const MIDDLE_INITIALS="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+function makeUniqueName(){
+  for(let t=0;t<400;t++){
+    const n=pick(FIRST)+" "+pick(LAST)+(chance(.06)?" "+pick(MIDDLE_INITIALS)+".":"");
+    if(!usedNames().has(n)) return n;
+  }
+  // deterministic fallback: append a roman numeral
+  const base=pick(FIRST)+" "+pick(LAST);
+  let n=base, k=2;
+  while(usedNames().has(n)){ n=base+" "+toRoman(k++); }
+  return n;
+}
+const ROMAN=["","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"];
+function toRoman(n){ return ROMAN[n]||("the "+n+"th"); }
+let _usedNamesCache=null;
+function usedNames(){
+  if(_usedNamesCache && _usedNamesCache.day===S.day && _usedNamesCache.n===S.clients.length) return _usedNamesCache.set;
+  const set=new Set(S.clients.map(c=>c.name));
+  _usedNamesCache={day:S.day,n:S.clients.length,set};
+  return set;
+}
+
+/* ---------- industries & companies (combinatorial) ---------- */
+const INDUSTRIES=[
+  {n:"coffee roastery", cores:["Beanline","Ember Roast","Foglifter","SlowPour","Crema Lab","Crema","Roastyard","Beanline"]},
+  {n:"law firm", cores:["Aldrich","Marlowe Legal","Vance","Corbin","Sterling & Marsh","Petrov Legal","Hale & Finch","Blackwood Law"]},
+  {n:"gym chain", cores:["Ironbound","RepHouse","FormCity","Kettle Co","Pulse District","Liftworks","Barbell Society","Gritline"]},
+  {n:"indie game studio", cores:["Pixel Wren","Hexlight","Paperwolf","Nine Door Games","Loamworks","Copper Fern","Tiny Anvil","Wickfield Games"]},
+  {n:"landscaping company", cores:["GreenStride","Mowtown","Verdant Bros","Cloverline","Root & Reed","Thistledown","Sodworks","Hedgeline"]},
+  {n:"bakery", cores:["Flour & Ember","Crumbcraft","The Warm Loaf","Doughlight","Rye & Sons","Butterblock","Siftworks","Ovenline"]},
+  {n:"veterinary clinic", cores:["Pawpoint","Brightwhisker","Four Paws","Furwell","WhiskerWorks","Dr. Molar's Rival","Kindpaws","Tailspin Vet"]},
+  {n:"real estate agency", cores:["Keystone Realty","Hearthome","Ridgeview","Lockbox Group","Gable & Post","Sillworks","Hearthstone Realty","Brownstone Row"]},
+  {n:"yoga studio", cores:["Stillpoint","Lotus Rise","Breathline","Studio Nimbus","Mat & Mist","Solace Yoga","Stretchwork","Bendline"]},
+  {n:"food truck", cores:["Curbside Kitchen","The Rolling Stove","Taco Odyssey","Smokewagon","Griddle Go","Wandering Wok","Pita Rush","Fryline"]},
+  {n:"dentist office", cores:["Molar & Co","Brightbite","Enamel Works","Fairview Dental","Tooth & Truth","Crownpoint","Flossworks","Grinline"]},
+  {n:"used bookstore", cores:["Dog-Eared","Marginalia","Second Spine","The Read Shelf","Inkwell Books","Foxtale Books","Spine & Vale","Readline"]},
+  {n:"auto repair shop", cores:["Torque Bros","Rustbelt Garage","Precision Motor","Camshaft Co","Gasket & Sons","Idleworks","Axlegrease","Wrenchline"]},
+  {n:"nonprofit", cores:["Bright Futures Fund","Harbor Relief","City Roots","Open Table Org","Lantern Aid","Mutual Ground","Civic Sprout","Kindline"]},
+  {n:"barbershop", cores:["Fade Factory","The Sharp Edge","Classic Cuts","Blade & Bone","Shear Genius","Clipworks","Trimline","Barber & Sons"]},
+  {n:"photography studio", cores:["Aperture North","Golden Hour Co","Frame Nine","Shutterline","Lenscraft","F-Stop Studio","Grainline","Darkroom Bros"]},
+  {n:"pest control", cores:["BugOut Solutions","Critter Line","SafeNest","Zero Vermin","Swatworks","Antline","Nestguard","Vermin Vanished"]},
+  {n:"catering company", cores:["Plate & Post","Saffron Route","The Long Table","Saltcellar","Canapé Cart","Feastworks","Garnish Bros","Tableline"]},
+  {n:"plant nursery", cores:["Fern & Fog","Rootstock","Greenhouse Nine","Potting Shed","Seedline","Chlorophyll Co","Stemworks","Bloomline"]},
+  {n:"escape room", cores:["Locked In","The Exit Room","Cipher House","Clockwork Escape","Keymaster","Roomworks","Deadbolt","Puzzline"]},
+  {n:"car wash", cores:["Suds City","Bubble Bros","Shine Express","Waxwing Wash","Foamline","Rinseworks","Polish Co","Spotfree"]},
+  {n:"tattoo parlor", cores:["Iron Ink","Blackline Studio","Hollow Needle","Steady Hand","Inkworks","Needle & Thread","Skinline","Permanent Co"]},
+  {n:"hardware store", cores:["Bolt & Beam","The Tool Crib","Nailworks","Gristmill Hardware","Hexline","Sawdust Co","Latch & Key","Measureline"]},
+  {n:"wedding planner", cores:["Ever After Co","The Aisle","Brideworks","Vow & Veil","First Dance","Tulle & Timber","Ringside","Vowline"]},
+];
+const COMPANY_TAILS=[""," LLC"," Inc"," Group"," Studio"," Collective"," Co."," Works"," Labs"," & Sons"," & Daughters"," Partners"," Society"," Dept."];
+function makeUniqueCompany(){
+  for(let t=0;t<400;t++){
+    const ind=pick(INDUSTRIES);
+    let co=pick(ind.cores);
+    if(chance(.55)) co+=pick(COMPANY_TAILS);
+    if(!usedCompanies().has(co)) return {co, industry:ind.n};
+  }
+  const ind=pick(INDUSTRIES);
+  let co=pick(ind.cores), k=2;
+  while(usedCompanies().has(co)){ co=pick(ind.cores)+" "+ROMAN[Math.min(k++,12)]; }
+  return {co, industry:ind.n};
+}
+let _usedCoCache=null;
+function usedCompanies(){
+  if(_usedCoCache && _usedCoCache.day===S.day && _usedCoCache.n===S.clients.length) return _usedCoCache.set;
+  const set=new Set(S.clients.map(c=>c.company));
+  _usedCoCache={day:S.day,n:S.clients.length,set};
+  return set;
+}
+
+/* ---------- personalities ---------- */
+const PERSONALITIES=[
+  {id:"chill",label:"Chill",pay:1.0,blurb:"Easy to work with, pays roughly on time."},
+  {id:"picky",label:"Picky",pay:1.1,picky:2,blurb:"High standards. Revisions happen."},
+  {id:"micromanager",label:"Micromanager",pay:1.05,picky:1,blurb:"Messages you constantly. Stressful."},
+  {id:"ghosty",label:"Ghosty",pay:1.0,late:1.4,blurb:"Slow to reply, slower to pay."},
+  {id:"generous",label:"Generous",pay:1.25,tip:.5,blurb:"Pays well and tips on delivery."},
+  {id:"cheap",label:"Cheap",pay:0.72,picky:1,blurb:"Haggles hard. Work must be fast."},
+  {id:"late",label:"Late Payer",pay:1.05,late:1.9,blurb:"Good work, bad bookkeeping."},
+  {id:"vip",label:"Serious Client",pay:1.45,picky:1,blurb:"Big company. Big expectations."},
+  {id:"excited",label:"Excited Newbie",pay:0.95,blurb:"First real project. Enthusiastic, vague."},
+  {id:"bureaucrat",label:"Bureaucrat",pay:1.15,picky:2,blurb:"Three forms before any real work."},
+];
+const PERS_BY_ID={}; PERSONALITIES.forEach(p=>PERS_BY_ID[p.id]=p);
+const NET_DAYS={generous:7,chill:14,picky:14,micromanager:14,ghosty:30,cheap:30,late:30,vip:45,excited:10,bureaucrat:21};
+
+/* ---------- job categories with generative briefs ---------- */
+const CATEGORIES=[
+  {id:"website",name:"Marketing website",sk:{frontend:1,design:1},base:1600,days:[5,9],diff:[1,3],
+   briefs:["{C} needs a site that doesn't look like 2009.","{N} wants a website before their rival across town launches one.","{C} finally agreed they need a real website instead of a Facebook page.","{N} got burned by a cheap site builder and wants it done right."],
+   feats:["Landing page layout","Contact form + validation","Mobile responsiveness","SEO meta + sitemap","Analytics hookup","Image gallery","Testimonials section","Blog feed"]},
+  {id:"store",name:"Online store",sk:{frontend:2,backend:1},base:3200,days:[8,14],diff:[2,4],
+   briefs:["{C} wants to sell online instead of the farmers market.","{N} is losing orders to a competitor with a shop.","{C} needs the store live before the holiday rush.","{N} has 200 products in a spreadsheet and a dream."],
+   feats:["Product catalog","Cart system","Checkout flow","Admin order view","Inventory tracking","Discount codes","Shipping rules","Customer accounts"]},
+  {id:"booking",name:"Booking system",sk:{backend:2,frontend:1},base:2800,days:[7,12],diff:[2,4],
+   briefs:["{C} is tired of scheduling by text message.","{N} lost a client to a double-booking and swore off paper calendars.","{C} wants clients to book themselves at 2am.","{N} needs reminders that actually remind."],
+   feats:["Calendar availability engine","Booking form","Email confirmations","Admin dashboard","Cancellation logic","SMS reminders","Waitlist handling","Staff schedules"]},
+  {id:"api",name:"API integration",sk:{backend:3},base:2400,days:[5,9],diff:[2,5],
+   briefs:["{C} needs two systems to stop fighting each other.","{N} was promised an integration by a vendor who vanished.","{C} wants their data flowing between tools by Friday.","{N} is copy-pasting between two apps every single morning."],
+   feats:["Auth handshake","Data mapping layer","Retry + error handling","Rate limit backoff","Integration tests","Webhook receiver","Data sync job","Monitoring dashboard"]},
+  {id:"migration",name:"Database migration",sk:{backend:3,devops:1},base:3600,days:[6,10],diff:[3,5],
+   briefs:["{C} is migrating off a system held together with duct tape.","{N} outgrew their spreadsheet and finally admits it.","{C} needs the old data moved before the license dies.","{N} has fifteen years of records nobody can lose."],
+   feats:["Schema mapping plan","Extract + transform script","Dry-run validation","Live cutover","Rollback safety net","Data cleanup pass","Archive export","Post-migration report"]},
+  {id:"dashboard",name:"Analytics dashboard",sk:{frontend:2,backend:2},base:4000,days:[8,13],diff:[2,5],
+   briefs:["{C} wants charts for a board meeting that keeps getting moved.","{N} is drowning in exports and wants one screen.","{C} wants their numbers to look as good as they claim.","{N} needs yesterday's numbers before tomorrow's meeting."],
+   feats:["Data pipeline","Chart components","Filters + date ranges","CSV export","Auth + roles","Realtime updates","Scheduled email reports","Mobile layout"]},
+  {id:"bugfix",name:"Emergency bugfix",sk:{backend:2,devops:1},base:1000,days:[2,4],diff:[1,3],
+   briefs:["{C} has a production fire and your name came up.","{N} lost a weekend to this bug already.","{C} needs this fixed before Monday, or else.","{N} has customers screenshotting the error at them."],
+   feats:["Reproduce the crash","Find root cause","Ship the patch","Write regression test","Post-mortem notes"]},
+  {id:"automation",name:"Automation script",sk:{backend:2,devops:2},base:1400,days:[4,7],diff:[1,3],
+   briefs:["{C} wants to stop paying someone to copy-paste.","{N} found you on a forum where you fixed something similar.","{C} has a spreadsheet nobody loves.","{N} wants the weekly report to write itself."],
+   feats:["Input parsing","Task engine","Scheduled runs","Failure alerts","Run log","Dry-run mode","Email digest","Config file"]},
+  {id:"redesign",name:"App redesign",sk:{design:3,frontend:2},base:3200,days:[7,11],diff:[2,4],
+   briefs:["{C} thinks their app looks dated, and they're right.","{N} lost customers who said the app felt old.","{C} got funding and wants to look the part.","{N} wants it to feel like 2026, not 2014."],
+   feats:["Design system tokens","Component restyle","Dark mode","Motion polish","Old-route redirects","Icon refresh","Empty states","Accessibility pass"]},
+  {id:"gameproto",name:"Game prototype",sk:{frontend:3,design:2},base:3800,days:[7,12],diff:[3,5],
+   briefs:["{C} needs a playable slice for an investor meeting.","{N} has a game idea and no coder.","{C} wants to test the concept before committing real money.","{N} watched one too many game dev videos at 2am."],
+   feats:["Core loop prototype","Art style pass","Juice + feedback","Menu flow","Build pipeline","Save system","Tutorial beat","Playtest hooks"]},
+  {id:"mobile",name:"Mobile app MVP",sk:{frontend:3,backend:1},base:5200,days:[10,16],diff:[3,5],
+   briefs:["{C} wants an app because their competitor has one.","{N} needs a simple app to test the market.","{C} got told by a customer 'there should be an app for this'.","{N} has a napkin sketch and strong opinions."],
+   feats:["Auth + profiles","Core screens","Push notifications","Offline cache","App store prep","Deep links","Crash reporting","Onboarding flow"]},
+  {id:"devops",name:"Infra rescue",sk:{devops:3,backend:2},base:3000,days:[4,8],diff:[3,5],
+   briefs:["{C} had an outage and never wants another.","{N} is paying three humans to deploy by hand.","{C} needs someone to own their infrastructure.","{N} found their 'server' is a laptop under a desk."],
+   feats:["Server audit","CI/CD setup","Monitoring + alerts","Backup automation","Cost optimization","Load testing","Uptime page","Incident runbook"]},
+  {id:"crm",name:"Custom internal tool",sk:{backend:2,frontend:2},base:3600,days:[8,13],diff:[2,4],
+   briefs:["{C} runs the whole business out of a shared Drive folder.","{N} bought three SaaS tools and uses none of them.","{C} wants one tool that fits instead of five that don't.","{N} has a whiteboard photo as their current system."],
+   feats:["Data model + CRUD","Role permissions","Import from spreadsheets","Search + filters","Activity log","Bulk actions","Printable views","Keyboard shortcuts"]},
+  {id:"content",name:"Site content engine",sk:{frontend:2,design:2},base:2200,days:[5,9],diff:[1,3],
+   briefs:["{C} wants to publish articles without calling a developer each time.","{N} has a blog that updates twice a year, by accident.","{C} wants their menu/prices editable by staff.","{N} keeps emailing edits and paying for each one."],
+   feats:["Simple CMS","Draft + publish flow","Image uploads","Scheduled posts","RSS feed","SEO friendly URLs","Tag system","Preview mode"]},
+];
+const CAT_BY_ID={}; CATEGORIES.forEach(c=>CAT_BY_ID[c.id]=c);
+
+/* ---------- market pulse (rotating demand) ---------- */
+function rollMarket(){
+  const hot=shuffle(CATEGORIES.map(c=>c.id)).slice(0,3);
+  return {week:Math.floor((S.day-1)/7), hot, updated:S.day};
+}
+function market(){
+  if(!S.market||S.market.week!==Math.floor((S.day-1)/7)) S.market=rollMarket();
+  return S.market;
+}
+function isHot(catId){ return market().hot.includes(catId); }
+
+/* ---------- typing snippets (templated, near-unlimited) ---------- */
+const SNIPPET_T=[
+ ["const {v1} = await db.query('SELECT * FROM {v2} WHERE status = $1', ['open']);","return {v1}.filter(o => o.total > 0).map(o => ({ id: o.id, total: o.total }));"],
+ ["function debounce{V2}(fn, ms) {","  let t;  return (...args) => {    clearTimeout(t);    t = setTimeout(() => fn(...args), ms);  };","}"],
+ ["app.get('/api/{v2}/:id', auth, async (req, res) => {","  const row = await {V2}.findById(req.params.id);","  if (!row) return res.status(404).json({ error: 'not found' });","  res.json(row);","});"],
+ ["export default function {V2}({ children, onClick, variant = 'primary' }) {","  return <button className={`btn ${variant}`} onClick={onClick}>{children}</button>;","}"],
+ ["try {","  const {v1} = JSON.parse(fs.readFileSync(path, 'utf8'));","  console.log('loaded', {v1}.length, '{v2} records');","} catch (err) {","  console.error('parse failed:', err.message);","}"],
+ ["const [state, setState] = useState({ loading: true, {v1}: [] });","useEffect(() => { fetch('/api/{v2}').then(r => r.json()).then(rows => setState({ loading: false, {v1}: rows })); }, []);"],
+ ["CREATE TABLE {v2} (","  id SERIAL PRIMARY KEY,","  name TEXT NOT NULL,","  {v1} INTEGER DEFAULT 0,","  created_at TIMESTAMPTZ DEFAULT now()",");"],
+ ["ssh deploy@{v1}-prod 'cd /srv/app && git pull && npm ci --production && pm2 reload all'"],
+ ["def reconcile_{v1}(payments, invoices):","    matched = [p for p in payments if p.ref in invoices]","    unmatched = [p for p in payments if p.ref not in invoices]","    return matched, unmatched"],
+ ["@media (max-width: {n1}px) {","  .{v2}-sidebar { display: none; }","  .{v2}-content { padding: 12px; }","}"],
+ ["const cache_{v1} = new Map();","function memo(key, fn) { if (!cache_{v1}.has(key)) cache_{v1}.set(key, fn()); return cache_{v1}.get(key); }"],
+ ["async function retry{V2}(fn, times = 3) {","  for (let i = 0; i < times; i++) {","    try { return await fn(); } catch (e) { if (i === times - 1) throw e; await sleep(300 * 2 ** i); }","  }","}"],
+ ["input:focus { outline: none; border-color: #5ef2a0; box-shadow: 0 0 0 3px rgba(94,242,160,.{n1}); }"],
+ ["SELECT c.name, COUNT(b.id) AS {v1}","FROM {v2} c LEFT JOIN bookings b ON b.client_id = c.id","GROUP BY c.name ORDER BY {v1} DESC;"],
+ ["export const require{V2} = (req, res, next) => {","  if (!req.{v1}) return res.status(401).json({ error: 'unauthorized' });","  next();","};"],
+ ["const results = await Promise.all(","  {v1}.map(id => fetch(`/api/{v2}/${id}`).then(r => r.json()))",");"],
+ ["git rebase -i HEAD~{n1}  # squash the fixup commits before pushing to {v1}"],
+ ["docker compose up -d --build && ./scripts/wait_healthy.sh {v2} 80{N1}"],
+ ["let acc = 0;","for (const row of {v1}) {","  if (row.status === 'active') acc += row.amount;","}","console.log(`total active {v2}: ${acc}`);"],
+ ["function sort{V2}(items) {","  return items.sort((a, b) => b.priority - a.priority).slice(0, {n1});","}"],
+ ["const {v1} = {v2}.reduce((acc, x) => { acc[x.kind] = (acc[x.kind] || 0) + 1; return acc; }, {});","console.log('{v2} breakdown:', {v1});"],
+ ["router.delete('/api/{v2}/:id', require{V2}, async (req, res) => {","  await {V2}.destroy(req.params.id);","  res.status(204).end();","});"],
+ ["class {V2}Store {","  constructor() { this.{v1} = new Map(); }","  add(item) { this.{v1}.set(item.id, item); return item; }","}"],
+ ["const clean = {v1}.filter(x => x.email && x.email.includes('@')).map(x => ({ ...x, source: '{v2}' }));"],
+];
+const VARS1=["rows","orders","invoices","leads","posts","tasks","events","shifts","jobs","bills","members","listings","tickets","trips","books","rentals"];
+const VARS2=["orders","invoices","leads","posts","tasks","events","shifts","jobs","bills","members","listings","tickets","trips","books","rentals","invoices"];
+const VARS3=["Order","Invoice","Lead","Post","Task","Event","Shift","Job","Bill","Member","Listing","Ticket","Trip","Book","Rental","Invoice"];
+const _recentSnips=[];
+function makeSnippet(){
+  for(let t=0;t<80;t++){
+    const tpl=pick(SNIPPET_T);
+    const v1=pick(VARS1), v2=pick(VARS2), V2=pick(VARS3);
+    const n1=pick([16,24,32,48,64,80,100,120,200,760]);
+    const text=tpl.map(line=>line.replace(/\{v1\}/g,v1).replace(/\{v2\}/g,v2).replace(/\{V2\}/g,V2).replace(/\{n1\}/g,n1).replace(/\{N1\}/g,n1%100)).join("\n");
+    if(!_recentSnips.includes(text)){
+      _recentSnips.push(text); if(_recentSnips.length>60) _recentSnips.shift();
+      return text;
+    }
+  }
+  // guaranteed-unique fallback: stamp a comment the player will never see twice
+  const tpl=pick(SNIPPET_T);
+  const tag="  // session "+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36);
+  const n1b=pick([16,24,32,48,64,80,100,120,200,760]);
+  return tpl.map(line=>line.replace(/\{v1\}/g,pick(VARS1)).replace(/\{v2\}/g,pick(VARS2)).replace(/\{V2\}/g,pick(VARS3)).replace(/\{n1\}/g,n1b).replace(/\{N1\}/g,n1b%100)).join("\n")+tag;
+}
+const _recentBriefs=[];
+function pickBrief(cat, client){
+  for(let t=0;t<40;t++){
+    const b=pick(cat.briefs).replace("{C}",client.company).replace("{N}",client.name.split(" ")[0]);
+    if(!_recentBriefs.includes(b)){ _recentBriefs.push(b); if(_recentBriefs.length>24) _recentBriefs.shift(); return b; }
+  }
+  return pick(cat.briefs).replace("{C}",client.company).replace("{N}",client.name.split(" ")[0])+" ("+client.industry+")";
+}
+
+/* ---------- bug quizzes ---------- */
+const BUGQUIZ=[
+  {q:"TypeError: Cannot read property 'map' of undefined",o:["Guard the data before mapping: rows?.map(...)","Wrap it in try/catch and move on","Delete the map call entirely"]},
+  {q:"Checkout button fires twice, double charges appear",o:["Disable the button until the request resolves","Add a second loading spinner to slow users down","Increase the server timeout"]},
+  {q:"Memory keeps climbing until the tab crashes",o:["An event listener is being re-added every render; remove it on cleanup","Buy the client more RAM","Restart the server every hour on a cron"]},
+  {q:"CSS: the modal renders behind the header on iOS Safari",o:["The stacking context is broken; give the modal a higher z-index in its own layer","Tell users to rotate their phone","Set overflow:hidden on body and hope"]},
+  {q:"API returns 500 only for users with more than 100 records",o:["The query has no LIMIT and times out; paginate it","Ban users with more than 100 records","Retry the same request in a loop"]},
+  {q:"Form submits on Enter before validation runs",o:["Handle the submit event and validate before the request","Remove Enter key support entirely","Validate after the request finishes"]},
+  {q:"Timezone bug: appointments booked for 3pm show at 11am",o:["Store timestamps in UTC and convert on display","Ask every client their timezone by email","Round all times to the hour"]},
+  {q:"Images look blurry on the new 4K screens",o:["Serve 2x resolution assets with srcset","Stretch the images with CSS","Tell users their screen is broken"]},
+  {q:"Webhook retries create duplicate orders",o:["Make the handler idempotent with a dedupe key on event id","Turn off retries at the provider","Delete duplicate orders manually each morning"]},
+  {q:"Build passes locally, fails in CI with missing module",o:["A dev dependency is missing from the lockfile; regenerate and commit it","Add sudo to the CI config","Copy node_modules into the repo"]},
+  {q:"Users report the app 'randomly' logs them out",o:["Session cookies expire server-side but the client never refreshes them; add silent renewal","Make passwords shorter so login is easier","Disable sessions entirely"]},
+  {q:"Search takes 8 seconds on the products page",o:["Add a database index on the search column","Show a nicer loading animation","Ask users to search less"]},
+  {q:"The date picker lets people book appointments in the past",o:["Validate against today's date on both client and server","Trust users not to do that","Delete past bookings every night"]},
+  {q:" Emails from the app land in spam",o:["Set up SPF, DKIM and a proper reply-to domain","Write louder subject lines","Send more emails to train the filter"]},
+  {q:"Two developers keep overwriting each other's changes",o:["Adopt feature branches with pull requests before merging","Email each other the changed files","Ban one of them from the repo"]},
+  {q:"The homepage is fine but every 4th visit shows a 502",o:["One worker in the pool is dead; fix health checks and restart it","Clear the browser cache of everyone's laptop","Upgrade the homepage copy"]},
+];
+
+/* ---------- review generation (templated) ---------- */
+const REV_POS=["Shipped early and it just works. Hiring {N} again.","Best contractor we've worked with, period.","Clean code, clear updates, no surprises.","Fixed stuff we didn't even know was broken.","Under budget and over delivered. {C} approves."];
+const REV_MID=["Solid work. A few rough edges.","Got the job done, mostly on time.","Fine overall. Communication could be tighter.","Delivered. The deadline was more of a suggestion."];
+const REV_NEG=["Missed the deadline and it cost us a launch.","Buggy on delivery. Had to chase fixes.","Disappeared for days mid-project.","Overpromised and underdelivered. {C} is not amused."];
+function reviewText(stars, client){
+  const pool=stars>=4.5?REV_POS:stars>=3?REV_MID:REV_NEG;
+  return pick(pool).replace("{N}",client?client.name.split(" ")[0]:"they").replace("{C}",client?client.company:"the client");
+}
+
+/* ---------- gear ---------- */
+const GEAR=[
+  {id:"laptop2",name:"Refurb laptop",cost:1400,desc:"+15% progress per work session."},
+  {id:"laptop3",name:"Beefy laptop",cost:3600,desc:"+30% progress per session. Needs the refurb first.",req:"laptop2"},
+  {id:"monitor",name:"Second monitor",cost:450,desc:"Fewer bugs per session."},
+  {id:"chair",name:"Ergonomic chair",cost:700,desc:"Sleep restores +15 extra energy."},
+  {id:"desklamp",name:"Proper desk lamp",cost:120,desc:"+2 quality on delivery."},
+  {id:"keyboard",name:"Mechanical keyboard",cost:250,desc:"Typing counts a little faster."},
+  {id:"coffeemachine",name:"Espresso machine",cost:900,desc:"Coffee costs half as much."},
+  {id:"ups",name:"Battery backup",cost:600,desc:"Laptop failure events can't take a whole day."},
+  {id:"whiteboard",name:"Whiteboard wall",cost:380,desc:"One free revision absorbed per project."},
+  {id:"plants",name:"Desk plants",cost:90,desc:"Stress decays a little faster overnight."},
+];
+
+/* ---------- economy constants ---------- */
+const RENT=1150, UTILITIES=180, INTERNET=80, INSURANCE=240, TAX_RATE=0.18, QUARTER_DAYS=90, MONTH_DAYS=30;
+const SAVE_KEY="deadline_save_v3";
+
+/* ---------- state ---------- */
+let S=null;
+
+function freshState(){
+  return {
+    v:3, day:1, cash:2800, energy:100, stress:5,
+    rep:3.1, repCount:0,
+    skills:{frontend:1,backend:1,design:1,devops:1,comms:1},
+    xp:{frontend:0,backend:0,design:0,devops:0,comms:0},
+    clients:[], offers:[], projects:[],
+    invoices:[], ledger:[], log:[], reviews:[],
+    gear:{}, incomeQuarter:0, incomeTotal:0, totalEarned:0, projectsDone:0,
+    inspired:false, skipWork:false, flags:{}, lastOfferDay:0,
+    market:null, ach:{}, cashHist:[2800], sessionsToday:0, drinksToday:0, welcomed:false,
+    bank:{cardNum:null, subs:[], foodMode:'balanced', autopay:true},
+  };
+}
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const r=localStorage.getItem(SAVE_KEY); if(!r) return false; S=JSON.parse(r); return !!S; }catch(e){ return false; } }
+function hasSave(){ try{ return !!localStorage.getItem(SAVE_KEY); }catch(e){ return false; } }
+function wipeSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+/* ---------- ledger / log / toast ---------- */
+function ledger(kind, amount, note){
+  S.ledger.push({d:S.day, kind, amount:Math.round(amount), note});
+  if(S.ledger.length>400) S.ledger.splice(0,S.ledger.length-400);
+}
+function log(text, cls){
+  S.log.unshift({d:S.day, t:text, c:cls||""});
+  if(S.log.length>140) S.log.length=140;
+}
+function toast(text, cls, ms){
+  const t=document.createElement("div");
+  t.className="toast "+(cls||"");
+  t.innerHTML=esc(text);
+  $("#toasts").appendChild(t);
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(),320); }, ms||3800);
+}
+function money(delta, note, kind){
+  S.cash+=delta;
+  ledger(kind||(delta>=0?"income":"expense"), delta, note);
+}
+
+/* ---------- dates (30-day months, day 1 = Monday Jan 1) ---------- */
+function dayParts(d){
+  const m=Math.floor((d-1)/30), dom=((d-1)%30)+1, dow=(d-1)%7;
+  return {month:MONTHS[m%12], dom, dow:WEEK[dow], dowN:(d-1)%7, year:1+Math.floor(m/12), monthN:m%12};
+}
+function dateStr(d){ const p=dayParts(d); return p.month+" "+p.dom+", Year "+p.year; }
+function isWeekend(d){ const n=(d-1)%7; return n===5||n===6; }
+
+/* ---------- clients ---------- */
+function makeClient(){
+  const name=makeUniqueName();
+  const {co, industry}=makeUniqueCompany();
+  const pers=pick(PERSONALITIES);
+  const c={
+    id:nid(), name, company:co, industry, pers:pers.id,
+    netDays:NET_DAYS[pers.id]||14,
+    lateMult:pers.late||1, tip:pers.tip||0, picky:pers.picky||0,
+    budgetMult:rnd(.85,1.2)*(pers.pay||1),
+    goodwill:60, history:[], projects:0, earned:0,
+  };
+  S.clients.push(c);
+  return c;
+}
+function clientBusy(c){
+  if(S.projects.some(p=>p.client.id===c.id)) return true;
+  if(S.offers.some(o=>o.client.id===c.id)) return true;
+  return false;
+}
+function pickOfferClient(){
+  const roster=S.clients.filter(c=>!clientBusy(c));
+  if(roster.length && chance(.4)){
+    const c=pick(roster);
+    const fresh=CATEGORIES.filter(cat=>!c.history.includes(cat.id));
+    if(fresh.length) return {c, cat:weightedCat(fresh)};
+  }
+  const c=makeClient();
+  return {c, cat:weightedCat(CATEGORIES)};
+}
+function weightedCat(pool){
+  const rep=S.rep;
+  const w=pool.map(cat=>{
+    let x=1;
+    const big=["mobile","dashboard","gameproto","crm","devops","migration"];
+    if(big.includes(cat.id)) x = rep>=3.8?1.2:0.35;
+    if(["bugfix","automation","website"].includes(cat.id)) x=1.4;
+    if(isHot(cat.id)) x*=2.2;
+    return x;
+  });
+  let total=w.reduce((a,b)=>a+b,0), r=Math.random()*total;
+  for(let i=0;i<pool.length;i++){ r-=w[i]; if(r<=0) return pool[i]; }
+  return pool[pool.length-1];
+}
+
+/* ---------- offer generation (computed pay, not table ranges) ---------- */
+function avgSkillFit(cat){
+  const ks=Object.keys(cat.sk||{});
+  if(!ks.length) return 3;
+  return ks.reduce((a,k)=>a+S.skills[k],0)/ks.length;
+}
+function computePay(cat, client, diff, skillFit){
+  let base=cat.base*(0.8+diff*0.12);
+  base*=client.budgetMult;
+  base*=isHot(cat.id)?1.2:1;
+  base*=1+(skillFit-2)*0.04;
+  base*=1+(S.rep-3)*0.06;
+  if(client.pers==="vip") base*=1.25;
+  if(client.pers==="cheap") base*=0.9;
+  return Math.max(300, Math.round(base/10)*10);
+}
+function genOffer(silent){
+  const {c, cat}=pickOfferClient();
+  const diff=rnd(cat.diff[0],cat.diff[1]);
+  const skillFit=avgSkillFit(cat);
+  const ask=computePay(cat,c,diff,skillFit);
+  const featCount=clamp(Math.round(rnd(3.4,5.6)+diff*0.4),3,6);
+  const feats=shuffle(cat.feats).slice(0,featCount).map(nm=>({name:nm,diff:clamp(Math.round(diff*rnd(.7,1.3)),1,6)}));
+  const brief=pickBrief(cat, c);
+  const off={
+    id:nid(), client:c, catId:cat.id, catName:cat.name, blurb:cat.blurb||"",
+    title:cat.name+" for "+c.company,
+    brief:c.name.split(" ")[0]+" from "+c.company+" ("+c.industry+") "+brief+".",
+    ask, days:rndi(cat.days[0],cat.days[1]), diff:Math.round(diff*10)/10, feats,
+    createdDay:S.day, pers:c.pers, req:cat.sk, hot:isHot(cat.id),
+  };
+  S.offers.push(off);
+  S.lastOfferDay=S.day;
+  if(!silent){ log("New offer: "+cat.name+" from "+c.company+" ("+fmt$(ask)+")","gold"); SFX.warn(); }
+  return off;
+}
+function eligible(off){
+  return Object.keys(off.req||{}).every(k=>S.skills[k]>=Math.max(1,off.req[k]-1));
+}
+function offerExpire(off){ return S.day-off.createdDay>12; }
+
+/* ---------- economy: invoices, bills, taxes ---------- */
+function issueInvoice(client, amount, netDays, note){
+  const inv={id:nid(), clientId:client.id, clientName:client.name, company:client.company,
+    amount:Math.round(amount), issued:S.day, due:S.day+netDays, status:"due", paid:0, nags:0, ghost:false, note:note||""};
+  S.invoices.push(inv);
+  log("Invoice sent to "+client.company+": "+fmt$(amount)+" (net "+netDays+")","acc2");
+  return inv;
+}
+function clientById(id){ return S.clients.find(c=>c.id===id); }
+function addRep(n){ S.rep=clamp(Math.round((S.rep+n)*100)/100,1,5); }
+function invoicePayChance(inv){
+  const c=clientById(inv.clientId); if(!c) return .6;
+  let base=.42;
+  if(c.pers==="generous") base=.75;
+  if(c.pers==="vip") base=.6;
+  if(c.pers==="ghosty") base=.22;
+  if(c.pers==="late") base=.25;
+  base*=c.lateMult>1.5?0.8:1;
+  if(inv.nags>0) base+=.18*inv.nags;
+  if(c.goodwill>75) base+=.08;
+  if(c.goodwill<35) base-=.1;
+  return clamp(base,0.08,0.95);
+}
+function tickInvoices(){
+  for(const inv of S.invoices){
+    if(inv.status!=="due") continue;
+    if(inv.due>S.day) continue;
+    const c=clientById(inv.clientId);
+    const payP=invoicePayChance(inv)*(inv.ghost?(inv.nags>0?0.5:0):1);
+    if(Math.random()<payP){
+      const late=inv.due<S.day;
+      inv.status="paid"; inv.paid=S.day;
+      money(inv.amount, "Payment: "+inv.company, "income");
+      S.totalEarned+=inv.amount;
+      if(c){ c.earned+=inv.amount; c.goodwill=clamp(c.goodwill+4,0,100); }
+      SFX.cash();
+      toast("Payment received: "+fmt$(inv.amount)+" from "+inv.company+(late?" (late)":""),"gold");
+      log("PAID "+fmt$(inv.amount)+" <- "+inv.company+(late?" (late)":""),"gold");
+    } else if(!inv.ghost && chance(.03)){
+      inv.ghost=true;
+      log(inv.company+" has gone quiet about their invoice...","bad");
+      toast("Ghosted: "+inv.company+" stopped responding about "+fmt$(inv.amount),"bad");
+    } else {
+      if(inv.due===S.day){ log("Invoice past due: "+inv.company+" ("+fmt$(inv.amount)+")","warn"); }
+    }
+  }
+}
+function nagInvoice(id){
+  const inv=S.invoices.find(i=>i.id===id); if(!inv||inv.status!=="due") return;
+  const c=clientById(inv.clientId);
+  inv.nags++;
+  SFX.click();
+  if(c && (c.pers==="picky"||c.pers==="vip"||c.pers==="bureaucrat") && chance(.3)){
+    c.goodwill=clamp(c.goodwill-8,0,100);
+    toast(c.name+" seemed annoyed by the reminder.","warn");
+    log("Nagged "+inv.company+". They did not love it.","warn");
+  } else {
+    toast("Reminder sent to "+inv.company+".","good");
+    log("Nagged "+inv.company+" about "+fmt$(inv.amount),"acc2");
+  }
+  save(); renderAll();
+}
+function writeOffInvoice(id){
+  const inv=S.invoices.find(i=>i.id===id); if(!inv||inv.status!=="due") return;
+  inv.status="written";
+  const c=clientById(inv.clientId);
+  if(c) c.goodwill=clamp(c.goodwill-15,0,100);
+  log("Wrote off "+fmt$(inv.amount)+" from "+inv.company+". Painful lesson.","bad");
+  toast("Wrote off "+fmt$(inv.amount)+". Some clients teach expensive lessons.","bad");
+  save(); renderAll();
+}
+function tickBills(){
+  const p=dayParts(S.day);
+  if(p.dom===1){
+    money(-RENT,"Rent","expense");
+    money(-UTILITIES,"Utilities","expense");
+    money(-INTERNET,"Internet","expense");
+    log("Bills paid: rent, utilities, internet ("+fmt$(-(RENT+UTILITIES+INTERNET))+")","bad");
+    toast("Bills paid: rent, utilities, internet ("+fmt$(-(RENT+UTILITIES+INTERNET))+")","warn");
+  }
+  if(p.dom===15){
+    money(-INSURANCE,"Health insurance premium","expense");
+    log("Health insurance: "+fmt$(-INSURANCE),"bad");
+  }
+  if((S.day-1)%QUARTER_DAYS===0 && S.day>1){
+    const tax=Math.round(S.incomeQuarter*TAX_RATE);
+    S.incomeTotal=S.incomeQuarter; S.incomeQuarter=0;
+    if(tax>0){
+      money(-tax,"Quarterly taxes","expense");
+      log("Quarterly taxes paid: "+fmt$(-tax),"bad");
+      toast("Quarterly tax bill: "+fmt$(tax)+" gone.","warn");
+    }
+  }
+}
+/* ---------- energy / daily rhythm ---------- */
+const SESSION_COST=22;
+const DRINK_DAILY_CAP=3, DRINK_COST=8;
+function canWorkNow(){ return !S.skipWork && S.energy>=SESSION_COST; }
+function sleepNight(){
+  let rec=58+(S.gear.chair?15:0);
+  if(isWeekend(S.day+1)) rec+=10;
+  S.energy=clamp(S.energy+rec,0,100);
+  let stressDrop=9+(S.gear.plants?4:0);
+  S.stress=clamp(S.stress-stressDrop,0,100);
+  S.skipWork=false;
+  S.sessionsToday=0;
+  S.drinksToday=0;
+}
+function spendEnergy(n){ S.energy=clamp(S.energy-n,0,100); }
+function addStress(n){ S.stress=clamp(S.stress+n,0,100); }
+function buyDrink(){
+  if(S.drinksToday>=DRINK_DAILY_CAP){ toast("That's your "+DRINK_DAILY_CAP+" energy drinks for today. Your heart has opinions.","warn"); SFX.warn(); return; }
+  if(S.cash<DRINK_COST){ toast("Not enough cash for an energy drink.","bad"); SFX.bad(); return; }
+  money(-DRINK_COST,"Energy drink","expense");
+  S.drinksToday++;
+  S.energy=clamp(S.energy+30,0,100);
+  addStress(5);
+  SFX.good();
+  toast("Energy drink. +30 energy, "+(DRINK_DAILY_CAP-S.drinksToday)+" left today. Your hands are slightly shaky.","good");
+  save(); renderTop();
+}
+function buyCoffee(){
+  const cost=S.gear.coffeemachine?3:6;
+  if(S.gear.coffeemachine&&S.machineBroken){ toast("The espresso machine is still broken.","bad"); SFX.bad(); return; }
+  if(S.energy>=100){ toast("You're already vibrating. No coffee needed.","warn"); return; }
+  if(S.cash<cost){ toast("Not enough cash for coffee.","bad"); SFX.bad(); return; }
+  money(-cost,"Coffee","expense");
+  S.energy=clamp(S.energy+14,0,100);
+  addStress(2);
+  SFX.good();
+  toast("Coffee. Energy up, nerves slightly worse.","good");
+  save(); renderTop();
+}
+function checkBroke(){
+  if(S.cash<-2000){ gameOver("Your landlord finally ran out of patience. Evicted, laptop sold, career on pause."); return true; }
+  if(S.cash<0 && (S.day-1)%MONTH_DAYS===0 && !S.flags.overdraftWarned){
+    S.flags.overdraftWarned=true;
+    toast("Your account is negative. The bank charges $35 for the privilege.","bad");
+    money(-35,"Overdraft fee","expense");
+  }
+  return false;
+}
+
+/* ---------- bank app, debit card, subscriptions, food modes ---------- */
+const SUBSCRIPTIONS=[
+  {id:"stream",name:"Streamflix",cost:16,desc:"Movies and shows. Classic wind-down."},
+  {id:"music",name:"Waveform",cost:11,desc:"Music while you code."},
+  {id:"cloud",name:"CloudDrive 2TB",cost:10,desc:"Backups. Cheap insurance for your livelihood."},
+  {id:"gym",name:"IronHouse Gym",cost:38,desc:"-3 stress every week. Body needs maintenance too."},
+  {id:"news",name:"The Dev Daily",cost:8,desc:"Industry news. Small comms XP weekly."},
+  {id:"meal",name:"MealPrep Box",cost:62,desc:"Weekly food handled. Less stress, less flavor."},
+];
+const FOOD_MODES={
+  takeout:{label:"Takeout life",cost:165,stress:2,blurb:"Never cook. Wallet notices, evenings are free."},
+  balanced:{label:"Balanced",cost:85,stress:0,blurb:"Cooking most nights. Reasonable."},
+  ramen:{label:"Ramen mode",cost:35,stress:5,blurb:"Survival groceries. Cheap, grim."},
+};
+function ensureBank(){
+  if(!S.bank) S.bank={cardNum:null,subs:[],foodMode:"balanced",autopay:true};
+  if(!S.bank.cardNum){
+    let n="4";
+    for(let i=0;i<15;i++) n+=rndi(0,9);
+    S.bank.cardNum=n.replace(/(\d{4})(?=\d)/g,"$1 ");
+    S.bank.cvv=String(rndi(100,999));
+    S.bank.exp=(rndi(1,12)<10?"0":"")+rndi(1,12)+"/2"+rndi(7,9);
+    save();
+  }
+}
+function weeklyTick(){
+  const p=dayParts(S.day);
+  if(p.dowN===6){ // Sunday evening: groceries for the week
+    const fm=FOOD_MODES[S.bank.foodMode]||FOOD_MODES.balanced;
+    money(-fm.cost,"Groceries ("+fm.label+")","expense");
+    if(fm.stress) addStress(fm.stress);
+  }
+  if(S.bank.subs.includes("gym")) addStress(-3);
+  if(S.bank.subs.includes("news") && chance(.5)) gainXp("comms",2);
+  if(p.dowN===6){ // weekly sub billing
+    for(const id of S.bank.subs){
+      const sub=SUBSCRIPTIONS.find(x=>x.id===id);
+      if(sub && id!=="gym" && id!=="news"){ money(-sub.cost,"Subscription: "+sub.name,"expense"); }
+    }
+  }
+}
+const LIFE_BUYS=[
+  {id:"nightout",name:"Night out with friends",cost:60,fx:()=>{addStress(-14);},note:"Stress down a lot. Worth it."},
+  {id:"takeout_tonight",name:"Order takeout tonight",cost:26,fx:()=>{S.energy=clamp(S.energy+10,0,100);addStress(-4);},note:"Energy up, stress down."},
+  {id:"games",name:"Buy that game on your wishlist",cost:45,fx:()=>{addStress(-9);},note:"You earned it. Stress down."},
+  {id:"gym_day",name:"Climbing session",cost:22,fx:()=>{addStress(-8);S.energy=clamp(S.energy-5,0,100);},note:"Stress down, a little tired."},
+  {id:"course",name:"Online course",cost:120,fx:()=>{gainXp(pick(SKILLS),16);},note:"XP in a random skill."},
+  {id:"newphone",name:"New phone (finally)",cost:800,fx:()=>{addStress(-6);toast("It's so fast. Rep +0.05 (clients notice punctuality).","good");addRep(0.05);},note:"Stress down, tiny rep bump."},
+];
+function buyLife(id){
+  const b=LIFE_BUYS.find(x=>x.id===id); if(!b) return;
+  if(S.cash<b.cost){ toast("Your card declines. Not enough cash.","bad"); SFX.bad(); return; }
+  money(-b.cost,"Self: "+b.name,"expense");
+  b.fx();
+  SFX.good();
+  toast(b.name+": "+b.note,"good");
+  save(); renderAll();
+}
+
+/* ---------- active projects (up to 2 concurrent, unique clients) ---------- */
+function P(id){ return id?S.projects.find(p=>p.id===id):S.projects[0]; }
+function acceptOffer(offId){
+  const off=S.offers.find(o=>o.id===offId); if(!off) return;
+  openNegotiation(off);
+}
+function startProject(off, quote, depositAgreed, depositPaid){
+  if(S.projects.length>=projectSlots()){ toast("You're already at your project limit for your rank.","warn"); return; }
+  if(S.projects.some(p=>p.client.id===off.client.id)){ toast("That client is already working with you.","warn"); return; }
+  S.offers=S.offers.filter(o=>o.id!==off.id);
+  off.client.history.push(off.catId);
+  const proj={
+    id:nid(), offer:off, client:off.client, quote, depositAgreed, depositPaid,
+    features:off.feats.map(f=>({name:f.name, diff:f.diff, prog:0, done:false})),
+    hiddenBugs:0, bugs:[], phase:"dev", startedDay:S.day,
+    qualityScore:0, late:false, absorbedRevision:false,
+  };
+  S.projects.push(proj);
+  if(depositPaid>0){
+    money(depositPaid,"Deposit: "+off.client.company,"income");
+    S.totalEarned+=depositPaid; off.client.earned+=depositPaid;
+    SFX.cash();
+  }
+  log("Contract signed: "+off.title+" at "+fmt$(quote)+(depositAgreed?" (30% deposit in)":""),"good");
+  toast("Contract signed. "+fmt$(quote)+(depositAgreed?", "+fmt$(depositPaid)+" deposited upfront":""));
+  closeModal();
+  save(); switchTab("work"); renderAll();
+  checkRankUp();
+}
+function laptopBonus(){ return S.gear.laptop3?0.30:(S.gear.laptop2?0.15:0); }
+function keyboardBonus(){ return S.gear.keyboard?1.1:1; }
+function bugChance(feat){
+  let c=feat.diff*0.045 + S.stress*0.004 + Math.max(0,(feat.diff-skillOf("backend")))*0.03;
+  if(S.energy<25) c+=0.08;
+  if(S.gear.monitor) c-=0.10;
+  return clamp(c,0.04,0.55);
+}
+function skillOf(k){ return S.skills[k]||1; }
+function sessionGain(feat, accuracy){
+  let g=(13+skillOf("frontend")*1.8+skillOf("backend")*1.8+laptopBonus()*100)*accuracy*keyboardBonus();
+  if(S.inspired){ g*=1.25; S.inspired=false; toast("Inspiration spent. Clean work.","good"); }
+  return g;
+}
+/* ---------- work session: type the code, no timer ---------- */
+let TY=null;
+function openWorkSession(pid, fi){
+  const p=P(pid); if(!p||p.phase!=="dev") return;
+  if(S.skipWork){ toast("You're done for today. Sleep.","warn"); return; }
+  if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee, an energy drink, or sleep.","warn"); SFX.warn(); return; }
+  if(S.energy<SESSION_COST){ toast("Too tired to code. Coffee or sleep.","warn"); SFX.warn(); return; }
+  const feat=p.features[fi];
+  const target=makeSnippet();
+  TY={pid, fi, target, typed:"", done:false, correct:0, mistakes:0};
+  openModal(`
+    <h3>Work session: ${esc(feat.name)}</h3>
+    <p class="meta">No timer. Type the code below at your own pace. Accuracy builds the feature; sloppiness builds bugs.</p>
+    <div class="tybar">
+      <div id="tyTimer"><i style="width:0%"></i></div>
+      <div class="tystat"><span>accuracy <b id="tyAcc">100%</b></span><span>progress <b id="tyProg">0%</b></span></div>
+    </div>
+    <div id="tyTarget">${renderTarget(target,"")}</div>
+    <textarea id="tyInput" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="type here..."></textarea>
+    <div class="actions"><button class="btn ghost" id="tyQuit">Give up</button></div>
+  `, true);
+  const inp=$("#tyInput");
+  setTimeout(()=>inp.focus(),50);
+  inp.addEventListener("input", onType);
+  $("#tyQuit").onclick=()=>{ endType(false); };
+}
+function renderTarget(target, typed){
+  let out="";
+  for(let i=0;i<target.length;i++){
+    const ch=target[i]==="\n"?"\n":target[i];
+    let cls="";
+    if(i<typed.length) cls = typed[i]===target[i] ? "done" : "err";
+    else if(i===typed.length) cls="cur";
+    out+= cls ? `<span class="${cls}">${esc(ch)}</span>` : esc(ch);
+  }
+  if(typed.length>=target.length) out+='<span class="cur"> </span>';
+  return out;
+}
+function onType(){
+  if(!TY||TY.done) return;
+  const inp=$("#tyInput");
+  TY.typed=inp.value;
+  TY.correct=0;
+  for(let i=0;i<TY.typed.length;i++){ if(TY.typed[i]===TY.target[i]) TY.correct++; }
+  const len=TY.target.length;
+  const pct=Math.round(TY.typed.length/len*100);
+  const acc=Math.round(TY.correct/Math.max(1,TY.typed.length)*100);
+  const st=$("#tyAcc"); if(st) st.textContent=acc+"%";
+  const pr=$("#tyProg"); if(pr) pr.textContent=pct+"%";
+  const tt=$("#tyTarget"); if(tt){ tt.innerHTML=renderTarget(TY.target,TY.typed); tt.scrollTop=tt.scrollHeight*0.6; }
+  const bar=$("#tyTimer i"); if(bar) bar.style.width=pct+"%";
+  if(chance(.3)) SFX.type();
+  if(TY.typed.length>=len){ endType(true); }
+}
+function endType(finished){
+  if(!TY||TY.done) return;
+  TY.done=true;
+  const p=P(TY.pid), feat=p.features[TY.fi];
+  const acc=clamp(TY.correct/Math.max(1,TY.typed.length||TY.target.length),0,1);
+  const gain=Math.round(sessionGain(feat,acc)*(finished?1:0.5));
+  feat.prog=clamp(feat.prog+gain,0,100);
+  spendEnergy(SESSION_COST);
+  S.sessionsToday++;
+  let bugTxt="";
+  if(Math.random()<bugChance(feat)*(1.2-acc*0.5)){
+    p.hiddenBugs++;
+    bugTxt=" ...and you left a bug in there.";
+  }
+  TY=null;
+  closeModal();
+  SFX.click();
+  if(feat.prog>=100){
+    feat.done=true;
+    log("Feature complete: "+feat.name+" ("+p.offer.title+")","good");
+    toast("Feature shipped: "+feat.name,"good");
+    gainXp("frontend",8); gainXp("backend",4);
+    if(p.features.every(f=>f.done)){ p.phase="test"; toast("All features built on "+p.offer.title+". Run the tests.","good"); SFX.good(); }
+  } else {
+    toast("+"+gain+"% on "+feat.name+bugTxt, bugTxt?"warn":"");
+  }
+  save(); renderAll();
+}
+/* ---------- testing & bugfixing ---------- */
+function runTests(pid){
+  const p=P(pid); if(!p||p.phase!=="test") return;
+  const found=[];
+  for(let i=0;i<p.hiddenBugs;i++) found.push(makeBug());
+  const extra=chance(.35)?1:0;
+  for(let i=0;i<extra;i++) found.push(makeBug());
+  p.hiddenBugs=0;
+  p.bugs=found;
+  p.testedDay=S.day;
+  log("Tests finished on "+p.offer.title+": "+found.length+" bug(s).", found.length?"bad":"good");
+  if(found.length){ SFX.bad(); toast("Tests found "+found.length+" bug(s) on "+p.offer.title+".","bad"); }
+  else { toast("Tests clean. Ready to deliver.","good"); SFX.good(); }
+  save(); renderAll();
+}
+function makeBug(){
+  const q=pick(BUGQUIZ);
+  const opts=shuffle(q.o.map((t,i)=>({t,ok:i===0})));
+  return {id:nid(), q:q.q, opts};
+}
+function fixBug(pid, bid, optIdx){
+  const p=P(pid); if(!p) return;
+  const b=p.bugs.find(x=>x.id===bid); if(!b) return;
+  const ok=b.opts[optIdx].ok;
+  if(ok){
+    p.bugs=p.bugs.filter(x=>x.id!==bid);
+    gainXp("backend",10);
+    SFX.good();
+    toast("Fixed.","good");
+    log("Bug fixed: "+b.q,"good");
+  } else {
+    addStress(6);
+    SFX.bad();
+    toast("That made it worse. Try again.","bad");
+  }
+  save(); renderAll();
+  if(!ok) openFixModal(pid, bid);
+}
+/* ---------- delivery ---------- */
+function qualityNow(p){
+  let q=58+p.features.filter(f=>f.done).length*6 - p.bugs.length*9 + avgSkill();
+  if(S.gear.desklamp) q+=2;
+  const dueDay=p.offer.createdDay+p.offer.days;
+  if(S.day>dueDay+1) q-=8;
+  return clamp(Math.round(q),5,100);
+}
+function avgSkill(){ return SKILLS.reduce((a,k)=>a+S.skills[k],0)/SKILLS.length; }
+function deliverProject(pid){
+  const p=P(pid); if(!p) return;
+  const q=qualityNow(p);
+  const dueDay=p.offer.createdDay+p.offer.days;
+  const onTime=S.day<=dueDay+1;
+  const lateDays=Math.max(0,S.day-dueDay);
+  let stars=1+q/26+(onTime?0.5:-1.1)+(p.client.picky?-(p.bugs.length?0.6:0.1):0)+rnd(-0.25,0.35);
+  stars=clamp(Math.round(stars*2)/2,1,5);
+  const rest=p.quote-p.depositPaid;
+  issueInvoice(p.client,rest,p.client.netDays,"Final payment: "+p.offer.title);
+  if(p.client.tip&&chance(p.client.tip)){
+    money(120,"Tip from "+p.client.company,"income");
+    S.totalEarned+=120;
+    toast("Bonus from "+p.client.name+": $120. They noticed the effort.","gold");
+  }
+  S.reviews.push({day:S.day+rndi(1,3), stars, clientId:p.client.id, project:p.offer.title, txt:reviewText(stars,p.client)});
+  p.client.projects++;
+  p.client.goodwill=clamp(p.client.goodwill+(stars>=4?10:(stars>=3?2:-12)),0,100);
+  S.projectsDone++;
+  gainXp("comms",12);
+  if(lateDays>0) addStress(8);
+  log("Delivered "+p.offer.title+" (quality "+q+"/100, "+stars+" stars"+(lateDays?", "+lateDays+"d late":"")+")","gold");
+  SFX.ship();
+  S.projects=S.projects.filter(x=>x.id!==pid);
+  save(); renderAll();
+  toast("Shipped. Invoice for "+fmt$(rest)+" is out. Now you wait.","gold");
+  maybeMilestone(); checkRankUp();
+}
+/* ---------- xp ---------- */
+function gainXp(k,n){
+  S.xp[k]=(S.xp[k]||0)+n;
+  while(S.xp[k]>=xpNeed(S.skills[k]) && S.skills[k]<10){
+    S.xp[k]-=xpNeed(S.skills[k]);
+    S.skills[k]++;
+    SFX.levelup();
+    toast(SKILL_LABEL[k]+" advanced to level "+S.skills[k]+".","gold",5000);
+    log(SKILL_LABEL[k]+" is now level "+S.skills[k],"gold");
+  }
+}
+/* ---------- milestones & achievements ---------- */
+const ACHS=[
+  {id:"a1", ic:"1", t:"First Blood", m:"Ship your first project", test:s=>s.projectsDone>=1},
+  {id:"a2", ic:"$", t:"Five Figures", m:"Earn $10,000 lifetime", test:s=>s.totalEarned>=10000},
+  {id:"a3", ic:"★", t:"Local Legend", m:"Reach 4.2 stars", test:s=>s.rep>=4.2},
+  {id:"a4", ic:"$", t:"Real Business", m:"Earn $50,000 lifetime", test:s=>s.totalEarned>=50000},
+  {id:"a5", ic:"10", t:"Double Digits", m:"Ship 10 projects", test:s=>s.projectsDone>=10},
+  {id:"a6", ic:"$", t:"Six Figures", m:"Earn $100,000 lifetime", test:s=>s.totalEarned>=100000},
+  {id:"a7", ic:"R", t:"Regulars", m:"10 clients in your roster", test:s=>s.clients.length>=10},
+  {id:"a8", ic:"x2", t:"Juggler", m:"Run two projects at once", test:s=>s.projects.length>=2},
+  {id:"a9", ic:"L5", t:"Specialist", m:"Any skill reaches level 5", test:s=>Object.values(s.skills).some(v=>v>=5)},
+  {id:"a10", ic:"S", t:"Full Setup", m:"Own every piece of gear", test:s=>GEAR.every(g=>s.gear[g.id])},
+  {id:"a11", ic:"25", t:"Veteran", m:"Ship 25 projects", test:s=>s.projectsDone>=25},
+  {id:"a12", ic:"50", t:"Forty Thousand Clients", m:"20 clients in your roster", test:s=>s.clients.length>=20},
+];
+function maybeMilestone(){
+  for(const a of ACHS){
+    if(!S.ach[a.id] && a.test(S)){
+      S.ach[a.id]=true;
+      toast("ACHIEVEMENT: "+a.t+". "+a.m,"gold",6000);
+      log("Achievement unlocked: "+a.t,"gold");
+      SFX.levelup();
+    }
+  }
+}
+function checkRankUp(){
+  const idx=rankIndex();
+  if(idx>(S.flags.rank||0)){
+    S.flags.rank=idx;
+    const perks={2:"You can now run two projects at once.",3:"Serious clients (big budgets) appear more often.",4:"Your referral engine keeps the inbox fuller."};
+    toast("RANK UP: "+RANKS[idx].name+(perks[idx]?" "+perks[idx]:""),"gold",7000);
+    log("Rank up: "+RANKS[idx].name,"gold");
+    SFX.levelup();
+  }
+}
+
+/* ---------- day advance ---------- */
+function advanceDay(){
+  if(checkBroke()) return;
+  S.day++;
+  S.cashHist.push(S.cash); if(S.cashHist.length>140) S.cashHist.shift();
+  sleepNight();
+  if(S.machineBroken) S.machineBroken=false;
+  tickInvoices();
+  tickBills();
+  weeklyTick();
+  rollEvents();
+  rollOffers();
+  rollReviews();
+  checkBroke();
+  save();
+  renderAll();
+}
+function rollOffers(){
+  const gap=S.day-S.lastOfferDay;
+  let p=clamp(0.28+gap*0.18+(S.rep-3)*0.08,0.15,0.95);
+  if(isWeekend(S.day)) p*=0.45;
+  if(S.projects.length && S.day-Math.min(...S.projects.map(x=>x.startedDay))<2) p*=0.7;
+  if(S.projects.length>=projectSlots()) p*=0.35;
+  if(chance(p)){
+    genOffer();
+    if(chance(.25)) genOffer();
+  }
+  const before=S.offers.length;
+  S.offers=S.offers.filter(o=>!offerExpire(o));
+  if(S.offers.length<before) log("An old offer expired. Clients move on fast.","warn");
+  if(S.offers.length>6) S.offers=S.offers.slice(-6);
+}
+function rollReviews(){
+  const due=S.reviews.filter(r=>r.day<=S.day);
+  S.reviews=S.reviews.filter(r=>r.day>S.day);
+  for(const r of due){
+    const c=clientById(r.clientId);
+    S.repCount++;
+    S.rep=clamp(((S.rep*Math.max(1,S.repCount-1))+r.stars)/(Math.max(1,S.repCount)),1,5);
+    const name=c?c.name:"a client";
+    toast("New review ("+r.stars+" stars): \""+r.txt+"\"", r.stars>=3.5?"gold":"bad",5000);
+    log("Review from "+name+": "+r.stars+" stars. "+r.txt, r.stars>=3.5?"gold":"bad");
+    maybeMilestone();
+  }
+  S.rep=Math.round(S.rep*100)/100;
+}
+function rollEvents(){
+  const n=chance(.55)?1:(chance(.5)?2:0);
+  for(let i=0;i<n;i++) fireRandomEvent();
+}
+function fireRandomEvent(){
+  const pool=[];
+  if(S.projects.length) pool.push("scope","scope","revise");
+  if(S.invoices.some(i=>i.status==="due"&&i.due>=S.day-6)) pool.push("ghost");
+  pool.push("referral","recruiter","inspired","portfoliolove","windfall","mentor");
+  if(!S.gear.ups) pool.push("laptop");
+  if(S.gear.coffeemachine) pool.push("coffee");
+  if(chance(.4)) pool.push("sick");
+  if(chance(.3)) pool.push("competitor");
+  if(S.rep>=4&&chance(.3)) pool.push("reviewbomb");
+  const ev=pick(pool);
+  switch(ev){
+    case "scope":{
+      const p=pick(S.projects); if(!p) break;
+      const featName=pick(["a dark mode","an admin page nobody asked for","a print-this-report button","a Stripe integration","an email newsletter","multi-language support","a mobile version","a settings page"]);
+      const extra=Math.round(p.quote*0.12/10)*10;
+      openChoiceModal("Scope creep",
+        esc(p.client.name)+" calls: \""+esc(featName)+". Just one more thing. It's small, right?\" It is not small.",
+        [
+          {label:"Take it (+"+fmt$(extra)+", more work, more stress)",fn:()=>{
+            p.features.push({name:"Extra: "+featName,diff:rndi(2,4),prog:0,done:false});
+            p.phase="dev"; p.quote+=extra;
+            addStress(7);
+            toast("Scope grew. So did the invoice.","warn");
+            log("Scope creep on "+p.offer.title+": "+featName+" (+"+fmt$(extra)+")","warn");
+            save(); renderAll();
+          }},
+          {label:"Politely decline",fn:()=>{
+            p.client.goodwill=clamp(p.client.goodwill-4,0,100);
+            toast("You held the line on scope.","good");
+            log("Declined scope creep: "+featName,"acc2");
+            save(); renderAll();
+          }},
+        ]);
+      break;}
+    case "revise":{
+      const p=pick(S.projects); if(!p) break;
+      if(p.phase==="test"||p.phase==="delivered") break;
+      const done=p.features.filter(x=>x.done);
+      const f=done.length?pick(done):null;
+      if(!f) break;
+      if(S.gear.whiteboard&&!p.absorbedRevision){
+        p.absorbedRevision=true;
+        toast("Your whiteboard caught the revision early. Free fix.","good");
+        log("Whiteboard absorbed a revision on "+p.offer.title,"acc2");
+        break;
+      }
+      f.done=false; f.prog=Math.round(f.prog*0.45);
+      p.phase="dev";
+      addStress(5);
+      if(p.client.picky) addStress(3);
+      toast(p.client.name+" wants changes to "+f.name+". Revision cycle.","warn");
+      log("Revision request on "+p.offer.title+": "+f.name,"warn");
+      break;}
+    case "ghost":{
+      const inv=pick(S.invoices.filter(i=>i.status==="due"));
+      if(!inv) break;
+      inv.due+=rndi(1,3);
+      toast(inv.company+" said the check is 'in process'. It is not.","warn");
+      log("Payment delayed: "+inv.company,"warn");
+      break;}
+    case "laptop":{
+      const cost=S.gear.ups?rndi(40,90):rndi(180,420);
+      money(-cost,"Laptop repair","expense");
+      if(!S.gear.ups){ S.skipWork=true; toast("Laptop died mid-build. Repair: "+fmt$(cost)+". The day is written off.","bad"); log("Laptop failure. No work today.","bad"); }
+      else { toast("Power flicker. The battery backup saved you; "+fmt$(cost)+" for a new fuse.","warn"); log("Minor laptop scare: "+fmt$(cost),"warn"); }
+      SFX.bad();
+      break;}
+    case "referral":{
+      addRep(+0.08);
+      genOffer();
+      toast("A past client referred you. Rep up, new offer in your inbox.","gold");
+      log("Referral came in. Rep rising.","gold");
+      break;}
+    case "recruiter":{
+      money(200,"Recruiter referral fee","income"); S.totalEarned+=200;
+      toast("A recruiter paid you $200 for referring a friend. Weird system, take the money.","good");
+      log("Recruiter referral fee: +$200","good");
+      break;}
+    case "inspired":{
+      S.inspired=true;
+      toast("3am idea. It's actually good. Next session +25%.","good");
+      log("Inspiration struck.","acc2");
+      break;}
+    case "sick":{
+      S.skipWork=true;
+      S.energy=clamp(S.energy-15,0,100);
+      toast("You caught something. No work today, no matter the deadline.","bad");
+      log("Sick day.","bad");
+      break;}
+    case "coffee":{
+      if(S.gear.coffeemachine&&!S.machineBroken){ S.machineBroken=true; money(-80,"Espresso machine repair","expense"); toast("Espresso machine died. "+fmt$(80)+" to revive it.","warn"); }
+      break;}
+    case "reviewbomb":{
+      addRep(+0.15);
+      toast("Someone shared your portfolio online. Rep is climbing.","gold");
+      log("Portfolio got shared. Rep up.","gold");
+      break;}
+    case "portfoliolove":{
+      addRep(+0.06);
+      toast("A dev blog linked your work. Nice.","good");
+      break;}
+    case "windfall":{
+      const amt=rndi(60,240);
+      money(amt,"Found money (old expense refund)","income"); S.totalEarned+=amt;
+      toast("A late expense refund landed: "+fmt$(amt)+".","good");
+      log("Expense refund: +"+fmt$(amt),"good");
+      break;}
+    case "mentor":{
+      gainXp(pick(SKILLS),12);
+      toast("A senior dev reviewed your code over coffee. Free XP.","good");
+      log("Mentor session. XP gained.","acc2");
+      break;}
+    case "competitor":{
+      addRep(-0.06);
+      toast("A rival freelancer undercut your rates somewhere. Rep dips a hair.","warn");
+      log("Competitive pressure. Rep -0.06.","warn");
+      break;}
+  }
+}
+/* ---------- gear shop ---------- */
+function openShop(){
+  const rows=GEAR.map(g=>{
+    const owned=!!S.gear[g.id];
+    const locked=g.req&&!S.gear[g.req];
+    return `<div class="card"><div class="spread">
+      <div><h3>${esc(g.name)}</h3><div class="meta">${esc(g.desc)}</div></div>
+      <div style="text-align:right">${owned?'<span class="tag good">owned</span>':`<button class="btn sm ${locked?"":"primary"}" data-buy="${g.id}" ${locked||S.cash<g.cost?"disabled":""}>${fmt$(g.cost)}</button>`}</div>
+    </div></div>`;
+  }).join("");
+  openModal(`<h3>Gear</h3><p class="meta">Cash: ${fmt$(S.cash)}</p>${rows}<div class="actions"><button class="btn" data-close>Close</button></div>`);
+  $$("#modalBox [data-buy]").forEach(b=>b.onclick=()=>{
+    const g=GEAR.find(x=>x.id===b.dataset.buy); if(!g||S.cash<g.cost) return;
+    money(-g.cost,"Bought "+g.name,"expense");
+    S.gear[g.id]=true;
+    SFX.cash();
+    toast("Bought "+g.name+".","good");
+    save(); openShop(); renderTop();
+  });
+}
+/* ---------- game over ---------- */
+function gameOver(reason){
+  wipeSave();
+  const stats={day:S.day, earned:S.totalEarned, done:S.projectsDone, rep:S.rep, rank:RANKS[rankIndex()].name};
+  openModal(`<h3 style="color:var(--bad)">Game over</h3>
+    <p>${esc(reason)}</p>
+    <p class="meta">Day ${stats.day}. ${fmt$(stats.earned)} earned lifetime. ${stats.done} project(s) shipped. Final rep: ${stats.rep} stars. Rank reached: ${esc(stats.rank)}.</p>
+    <div class="actions"><button class="btn primary" id="goRestart">Start over</button></div>`,true);
+  $("#goRestart").onclick=()=>{ closeModal(); S=freshState(); genOffer(true); genOffer(true); save(); showScreen("main"); switchTab("inbox"); renderAll(); };
+}
+
+/* ---------- rendering ---------- */
+function starStr(n){
+  const full=Math.floor(n), half=n-full>=0.5;
+  let s="";
+  for(let i=0;i<full;i++) s+="★";
+  if(half) s+="⯨";
+  for(let i=full+(half?1:0);i<5;i++) s+="<span class='off'>★</span>";
+  return s;
+}
+function renderTop(){
+  $("#stCash").textContent=fmt$(S.cash);
+  $("#stCash").style.color=S.cash<0?"var(--bad)":"";
+  $("#energyFill").style.width=S.energy+"%";
+  $("#stEnergy").textContent=Math.round(S.energy);
+  $("#stressFill").style.width=S.stress+"%";
+  $("#stStress").textContent=Math.round(S.stress);
+  $("#stRep").innerHTML=starStr(S.rep);
+  $("#stRepN").textContent=S.rep.toFixed(1);
+  const p=dayParts(S.day);
+  $("#stDay").textContent="Day "+S.day;
+  $("#stWk").textContent=p.dow;
+  $("#stDate").textContent=dateStr(S.day);
+  const ri=rankIndex();
+  $("#rankName").textContent=RANKS[ri].name;
+  $("#rankFill").style.width=Math.round(rankProgress()*100)+"%";
+}
+function dots(){
+  $("#dotInbox").classList.toggle("hidden",!S.offers.some(o=>eligible(o)));
+  $("#dotWork").classList.toggle("hidden",!S.projects.length);
+  $("#dotMoney").classList.toggle("hidden",S.invoices.some(i=>i.status==="due"&&i.due<=S.day));
+}
+function persTag(id){
+  const p=PERS_BY_ID[id]||PERSONALITIES[0];
+  const cls={generous:"good",vip:"info",cheap:"bad",ghosty:"warn",late:"warn",picky:"warn",bureaucrat:"info"}[id]||"";
+  return `<span class="tag ${cls}">${esc(p.label)}</span>`;
+}
+function renderInbox(){
+  const el=$("#tab-inbox");
+  const m=market();
+  const hotNames=m.hot.map(id=>CAT_BY_ID[id]?CAT_BY_ID[id].name:id).join(" · ");
+  if(!S.offers.length){
+    el.innerHTML=`<h2 class="ph">Inbox <small>offers land here</small></h2>
+    <div class="card"><div class="meta">Market pulse this week: <span class="tag hot">hot: ${esc(hotNames)}</span> <span class="faint">hot categories pay 20% more and show up twice as often.</span></div></div>
+    <div class="empty">No offers right now. Sleep and check back.<br><span class="faint">Freelancing has a lot of this.</span></div>`;
+    return;
+  }
+  let h=`<h2 class="ph">Inbox <small>${S.offers.length} open offer(s) · expired in ${Math.max(0,12-(S.day-(S.offers[0]?S.offers[0].createdDay:S.day)))}d+ · ${projectSlots()-S.projects.length} project slot(s) free</small></h2>
+  <div class="card"><div class="meta">Market pulse this week: <span class="tag hot">hot: ${esc(hotNames)}</span> <span class="faint">hot categories pay 20% more and show up twice as often.</span></div></div>`;
+  for(const o of S.offers){
+    const ok=eligible(o);
+    const c=o.client;
+    const p=PERS_BY_ID[o.pers]||PERSONALITIES[0];
+    const exp=o.createdDay+12-S.day;
+    h+=`<div class="card offer">
+      <div class="row" style="margin-bottom:6px">
+        <div class="avat" style="background:linear-gradient(135deg,#8f7bff,#5ef2a0)">${esc(c.name.split(" ").map(x=>x[0]).join("").slice(0,2))}</div>
+        <div style="flex:1"><h3>${esc(o.title)}</h3>
+          <div class="meta">${esc(c.name)} · ${esc(c.company)} · ${esc(c.industry)}</div></div>
+        <div style="text-align:right"><div class="pay">${fmt$(o.ask)}</div>${o.hot?'<span class="tag hot">hot market</span>':''}</div>
+      </div>
+      <p style="margin:4px 0 8px">${esc(o.brief)}</p>
+      <div class="tagrow">
+        ${persTag(o.pers)}
+        <span class="tag info">difficulty ${o.diff}</span>
+        <span class="tag">deadline ${o.days}d</span>
+        <span class="tag warn">pays net ${c.netDays}</span>
+        <span class="tag ${exp<=3?"bad":""}">expires in ${exp}d</span>
+      </div>
+      <div class="meta faint" style="margin-bottom:8px">${o.feats.map(f=>f.name).join(" · ")}</div>
+      <div class="row">
+        <button class="btn primary sm" data-accept="${o.id}" ${ok?"":"disabled"}>Accept &amp; negotiate</button>
+        <button class="btn ghost sm" data-decline="${o.id}">Pass</button>
+        ${ok?"":`<span class="meta red">needs ${Object.keys(o.req).map(k=>SKILL_LABEL[k]+" "+Math.max(1,o.req[k]-1)).join(", ")}</span>`}
+      </div>
+    </div>`;
+  }
+  el.innerHTML=h;
+  $$("#tab-inbox [data-accept]").forEach(b=>b.onclick=()=>{SFX.click();acceptOffer(+b.dataset.accept)});
+  $$("#tab-inbox [data-decline]").forEach(b=>b.onclick=()=>{
+    S.offers=S.offers.filter(o=>o.id!==+b.dataset.decline);
+    log("Passed on an offer.","");
+    save(); renderAll();
+  });
+}
+function featRow(f,i,p){
+  const canWork=p.phase==="dev"&&canWorkNow();
+  return `<div class="feat ${f.done?"done":""}">
+    <div class="ic">${f.done?"✓":(i+1)}</div>
+    <div style="flex:1">
+      <div class="nm">${esc(f.name)} ${f.done?'<span class="tag good">done</span>':`<span class="tag">diff ${f.diff}</span>`}</div>
+      <div class="bar" style="margin-top:4px"><i class="fill-acc" style="width:${f.prog}%"></i></div>
+    </div>
+    ${!f.done&&p.phase==="dev"?`<button class="btn sm ${canWork?"primary":""}" data-work="${p.id}:${i}" ${canWork?"":"disabled"}>Work</button>`:""}
+  </div>`;
+}
+function projectCard(p){
+  const due=p.offer.createdDay+p.offer.days;
+  const left=due-S.day+1;
+  const totalProg=Math.round(p.features.reduce((a,f)=>a+f.prog,0)/p.features.length);
+  let h=`<div class="card">
+    <div class="spread"><div><h3>${esc(p.offer.title)}</h3>
+      <div class="meta">${esc(p.client.name)} · ${esc(p.client.company)} · ${esc(p.offer.blurb||p.offer.catName)}</div></div>
+      <div style="text-align:right"><div class="pay">${fmt$(p.quote)}</div>
+      <div class="meta">${p.depositPaid?fmt$(p.depositPaid)+" deposit in · ":""}${fmt$(p.quote-p.depositPaid)} on delivery</div></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="tag ${left<=2?"bad":left<=4?"warn":"info"}">${left<=0?"deadline blown":left+" day"+(left===1?"":"s")+" to deadline"}</span>
+      <span class="tag">phase: ${p.phase}</span>
+      <span class="tag">energy ${Math.round(S.energy)}/100</span>
+      ${S.inspired?'<span class="tag gold">inspired: next session +25%</span>':""}
+    </div>
+    <div class="bar" style="margin:12px 0"><i class="fill-acc2" style="width:${totalProg}%"></i></div>
+    <div>${p.features.map((f,i)=>featRow(f,i,p)).join("")}</div>`;
+  if(p.phase==="test"||p.bugs.length){
+    h+=`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><h3>Quality control</h3>`;
+    if(!p.testedDay) h+=`<p class="meta">Run the test suite before you ship. Clients notice bugs; reviewers really notice bugs.</p><div class="row" style="margin-top:8px"><button class="btn primary sm" data-test="${p.id}">Run tests</button></div>`;
+    else{
+      h+=`<p class="meta">Tests run on day ${p.testedDay}. ${p.bugs.length} open bug(s).</p>`;
+      if(p.bugs.length) h+=p.bugs.map(b=>`<div class="row" style="margin-top:8px"><span class="tag bad">bug</span><span class="meta" style="flex:1">${esc(b.q)}</span><button class="btn sm" data-fix="${p.id}:${b.id}">Fix</button></div>`).join("");
+      h+=`<div class="row" style="margin-top:12px"><button class="btn sm" data-retest="${p.id}">Run tests again</button>${p.bugs.length?"":`<button class="btn primary sm" data-deliver="${p.id}">Deliver to client</button>`}</div>`;
+      if(p.bugs.length) h+=`<div class="row" style="margin-top:8px"><button class="btn sm danger" data-deliver="${p.id}">Ship it broken anyway</button><span class="meta faint">they will find out</span></div>`;
+    }
+    h+=`</div>`;
+  }
+  if(p.phase==="dev"&&p.features.every(f=>f.done)){
+    h+=`<div class="row" style="margin-top:10px"><button class="btn primary sm" data-testforce="${p.id}">Move to testing</button></div>`;
+  }
+  h+=`</div>`;
+  return h;
+}
+function renderWork(){
+  const el=$("#tab-work");
+  let h=`<h2 class="ph">Work <small>${S.projects.length}/${projectSlots()} project slot(s) · work as long as your energy holds</small></h2>`;
+  if(!S.projects.length){
+    el.innerHTML=h+`<div class="empty">No active project. Take an offer from the inbox.<br><span class="faint">The rent does not accept "between projects" as an excuse.</span></div>`;
+    return;
+  }
+  h+=S.projects.map(projectCard).join("");
+  el.innerHTML=h;
+  $$("#tab-work [data-work]").forEach(b=>b.onclick=()=>{SFX.click();const [pid,fi]=b.dataset.work.split(":");openWorkSession(+pid,+fi)});
+  $$("#tab-work [data-test]").forEach(b=>b.onclick=()=>{SFX.click();runTests(+b.dataset.test)});
+  $$("#tab-work [data-testforce]").forEach(b=>b.onclick=()=>{SFX.click();const p=P(+b.dataset.testforce);p.phase="test";save();renderAll()});
+  $$("#tab-work [data-retest]").forEach(b=>b.onclick=()=>{SFX.click();runTests(+b.dataset.retest)});
+  $$("#tab-work [data-fix]").forEach(b=>b.onclick=()=>{SFX.click();const [pid,bid]=b.dataset.fix.split(":");openFixModal(+pid,+bid)});
+  $$("#tab-work [data-deliver]").forEach(b=>b.onclick=()=>{SFX.click();openDeliverModal(+b.dataset.deliver)});
+}
+function renderClients(){
+  const el=$("#tab-clients");
+  let h=`<h2 class="ph">Clients <small>${S.clients.length} in your roster, no repeats ever</small></h2>`;
+  if(!S.clients.length){ el.innerHTML=h+`<div class="empty">Nobody yet.</div>`; return; }
+  const sorted=[...S.clients].sort((a,b)=>b.projects-a.projects||b.goodwill-a.goodwill);
+  h+=sorted.map(c=>{
+    const busy=clientBusy(c);
+    const hist=c.history.map(id=>CAT_BY_ID[id]?CAT_BY_ID[id].name:id);
+    const gw=Math.round(c.goodwill);
+    return `<div class="card">
+      <div class="row" style="margin-bottom:6px">
+        <div class="avat" style="background:linear-gradient(135deg,${c.projects?"#5ef2a0,#8f7bff":"#3b4a68,#55688f"})">${esc(c.name.split(" ").map(x=>x[0]).join("").slice(0,2))}</div>
+        <div style="flex:1"><h3>${esc(c.name)}</h3><div class="meta">${esc(c.company)} · ${esc(c.industry)}</div></div>
+        <div style="text-align:right">${busy?'<span class="tag warn">working with you</span>':(c.projects?'<span class="tag good">past client</span>':'<span class="tag">lead</span>')}</div>
+      </div>
+      <div class="tagrow">
+        ${persTag(c.pers)}
+        <span class="tag ${gw<35?"bad":gw>75?"good":""}">goodwill ${gw}/100</span>
+        <span class="tag warn">pays net ${c.netDays}</span>
+        <span class="tag">${c.projects} project(s)</span>
+        <span class="tag gold">${fmt$(c.earned)} earned</span>
+      </div>
+      ${hist.length?`<div class="meta faint" style="margin-top:4px">past work: ${esc(hist.join(", "))}</div>`:""}
+    </div>`;
+  }).join("");
+  el.innerHTML=h;
+}
+function drawSpark(){
+  const cv=$("#spark"); if(!cv) return;
+  const ctx=cv.getContext("2d");
+  const w=cv.width=cv.offsetWidth*2, hgt=cv.height=140;
+  const data=S.cashHist.slice(-120);
+  ctx.clearRect(0,0,w,hgt);
+  if(data.length<2) return;
+  const min=Math.min(...data,0), max=Math.max(...data,1);
+  const px=i=>i/(data.length-1)*w, py=v=>hgt-8-(v-min)/(max-min||1)*(hgt-16);
+  ctx.strokeStyle="#243049"; ctx.beginPath(); ctx.moveTo(0,py(0)); ctx.lineTo(w,py(0)); ctx.stroke();
+  ctx.beginPath();
+  data.forEach((v,i)=>{ i?ctx.lineTo(px(i),py(v)):ctx.moveTo(px(i),py(v)); });
+  ctx.strokeStyle=S.cash<0?"#ff6b6b":"#5ef2a0"; ctx.lineWidth=3; ctx.stroke();
+  ctx.lineTo(w,py(0)); ctx.lineTo(0,py(0)); ctx.closePath();
+  ctx.fillStyle=S.cash<0?"rgba(255,107,107,.08)":"rgba(94,242,160,.08)"; ctx.fill();
+}
+function renderMoney(){
+  const el=$("#tab-money");
+  const nextRentDay=(Math.floor((S.day-1)/30)+1)*30+1;
+  ensureBank();
+  let h=`<h2 class="ph">Money <small>the part that keeps score</small></h2>
+  <div class="row" style="margin-bottom:14px">
+    <div class="bankcard" id="bankCard" style="cursor:pointer">
+      <div class="bc-top"><span>DAYLIGHT DEBIT</span><span>${esc(S.bank.exp||"--/--")}</span></div>
+      <div class="bc-num">${esc(S.bank.cardNum||"")}</div>
+      <div class="bc-bot"><span>${esc((S.rep>0?"STEPHEN FEHON":"CARDHOLDER"))}</span><span>debit</span></div>
+    </div>
+    <button class="btn primary sm" id="btnBank">Open bank app</button>
+  </div>
+  <div class="grid3" style="margin-bottom:14px">
+    <div class="kpi"><div class="v" style="color:${S.cash<0?"var(--bad)":"var(--acc)"}">${fmt$(S.cash)}</div><div class="k">cash</div></div>
+    <div class="kpi"><div class="v">${fmt$(S.totalEarned)}</div><div class="k">earned lifetime</div></div>
+    <div class="kpi"><div class="v">${fmt$(Math.round(S.incomeQuarter*TAX_RATE))}</div><div class="k">taxes owed next quarter</div></div>
+  </div>
+  <div class="card"><h3>Cash over time</h3><canvas id="spark"></canvas></div>
+  <div class="card"><h3>Recurring</h3>
+    <table><tr><th>bill</th><th class="num">monthly</th><th>next due</th></tr>
+    <tr><td>Rent</td><td class="num">${fmt$(RENT)}</td><td>day ${nextRentDay}</td></tr>
+    <tr><td>Utilities + internet</td><td class="num">${fmt$(UTILITIES+INTERNET)}</td><td>day ${nextRentDay}</td></tr>
+    <tr><td>Health insurance</td><td class="num">${fmt$(INSURANCE)}</td><td>day ${Math.floor((S.day-1)/30)*30+15}</td></tr>
+    <tr><td>Quarterly taxes (${Math.round(TAX_RATE*100)}%)</td><td class="num">on profit</td><td>every ${QUARTER_DAYS} days</td></tr></table>
+  </div>
+  <div class="card"><h3>Invoices</h3>`;
+  const open=S.invoices.filter(i=>i.status==="due");
+  const done=S.invoices.filter(i=>i.status!=="due");
+  if(!open.length) h+=`<p class="meta">Nothing outstanding. Weird feeling, isn't it.</p>`;
+  else h+=`<table><tr><th>client</th><th>note</th><th class="num">amount</th><th>due</th><th></th></tr>`+
+    open.map(i=>`<tr><td>${esc(i.company)}</td><td class="meta">${esc(i.note||"")}</td><td class="num pay">${fmt$(i.amount)}</td>
+      <td class="${i.due<S.day?"red":"meta"}">day ${i.due}${i.due<S.day?" (late)":""}</td>
+      <td><button class="btn sm ghost" data-nag="${i.id}">Nag</button> <button class="btn sm danger" data-write="${i.id}" title="give up on it">Write off</button></td></tr>`).join("")+`</table>`;
+  h+=`</div>`;
+  if(done.length){
+    h+=`<div class="card"><h3>History</h3><div class="scrollY"><table><tr><th>client</th><th class="num">amount</th><th>status</th></tr>`+
+      done.map(i=>`<tr><td>${esc(i.company)}</td><td class="num">${fmt$(i.amount)}</td><td class="meta">${i.status}</td></tr>`).join("")+`</table></div></div>`;
+  }
+  h+=`<div class="card"><h3>Ledger <span class="meta faint">(last 12 entries)</span></h3><table>`+
+    S.ledger.slice(-12).reverse().map(l=>`<tr><td class="meta">day ${l.d}</td><td>${esc(l.note||l.kind)}</td><td class="num ${l.amount>=0?"green":"red"}">${fmt$(l.amount)}</td></tr>`).join("")+`</table></div>`;
+  el.innerHTML=h;
+  $("#btnBank").onclick=()=>{SFX.click();openBank();};
+  $("#bankCard").onclick=()=>{SFX.click();openBank();};
+  $$("#tab-money [data-nag]").forEach(b=>b.onclick=()=>{nagInvoice(+b.dataset.nag);});
+  $$("#tab-money [data-write]").forEach(b=>b.onclick=()=>{
+    openChoiceModal("Write off "+esc(fmt$(S.invoices.find(i=>i.id===+b.dataset.write).amount))+"?","No payment is coming. Writing it off clears the books and stings a little.",[
+      {label:"Write it off",fn:()=>{writeOffInvoice(+b.dataset.write);}},
+      {label:"Keep chasing",fn:()=>{}},
+    ]);
+  });
+  requestAnimationFrame(drawSpark);
+}
+function renderYou(){
+  const el=$("#tab-you");
+  let h=`<h2 class="ph">You <small>skills, gear, stats</small></h2>
+  <div class="grid2">
+  <div class="card"><h3>Skills</h3>`;
+  h+=SKILLS.map(k=>{
+    const lv=S.skills[k], x=S.xp[k], need=xpNeed(lv);
+    return `<div style="margin:10px 0"><div class="spread"><span class="nm">${SKILL_LABEL[k]} <span class="tag info">lv ${lv}</span></span><span class="meta faint">${x}/${need} xp</span></div>
+    <div class="bar" style="margin-top:4px"><i class="fill-acc2" style="width:${Math.min(100,x/need*100)}%"></i></div></div>`;
+  }).join("");
+  h+=`<p class="meta faint" style="margin-top:8px">Skills gate which offers you can take and how fast you build.</p></div>
+  <div class="card"><h3>Gear</h3>`;
+  h+=GEAR.map(g=>`<div class="row" style="margin:7px 0"><span class="tag ${S.gear[g.id]?"good":""}">${S.gear[g.id]?"✓":"✗"}</span><span class="nm" style="flex:1">${esc(g.name)}</span><span class="meta faint">${S.gear[g.id]?"owned":fmt$(g.cost)}</span></div>`).join("");
+  h+=`<div class="row" style="margin-top:10px"><button class="btn sm primary" id="btnShop2">Open gear shop</button>
+  <button class="btn sm" id="btnCoffee2">Coffee (${fmt$(S.gear.coffeemachine?3:6)})</button></div></div>
+  </div>
+  <div class="grid4" style="margin-top:14px">
+    <div class="kpi"><div class="v">${S.projectsDone}</div><div class="k">projects shipped</div></div>
+    <div class="kpi"><div class="v">${S.rep.toFixed(1)}★</div><div class="k">reputation (${S.repCount})</div></div>
+    <div class="kpi"><div class="v">${S.clients.length}</div><div class="k">clients in roster</div></div>
+    <div class="kpi"><div class="v">${RANKS[rankIndex()].name}</div><div class="k">current rank</div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Achievements <span class="meta faint">${Object.keys(S.ach).length}/${ACHS.length}</span></h3>
+  <div class="grid4">`;
+  h+=ACHS.map(a=>`<div class="ach ${S.ach[a.id]?"got":""}"><div class="ic">${a.ic}</div><div><div class="t">${esc(a.t)}</div><div class="m">${esc(a.m)}</div></div></div>`).join("");
+  h+=`</div></div>
+  <div class="card" style="margin-top:14px"><h3>Reviews</h3>`;
+  const rv=[...S.reviews].slice(-8).reverse();
+  h+= rv.length? rv.map(r=>{const c=clientById(r.clientId);return `<div class="row" style="margin:6px 0"><span class="stars">${starStr(r.stars)}</span><span class="meta" style="flex:1">"${esc(r.txt||"")}"</span><span class="meta faint">${esc(c?c.company:"")}</span></div>`;}).join(""):`<p class="meta">No reviews yet. Ship something.</p>`;
+  h+=`</div>`;
+  el.innerHTML=h;
+  $("#btnShop2").onclick=()=>openShop();
+  $("#btnCoffee2").onclick=()=>buyCoffee();
+}
+function renderAll(){
+  renderTop(); dots();
+  renderInbox(); renderWork(); renderClients(); renderMoney(); renderYou();
+  $("#log").innerHTML=S.log.map(l=>`<div><span class="d">d${l.d}</span><span class="${l.c}">${esc(l.t)}</span></div>`).join("");
+}
+
+/* ---------- modal helpers ---------- */
+function openModal(html, lock){
+  const root=$("#modalRoot"), box=$("#modalBox");
+  box.innerHTML=html;
+  root.classList.add("open");
+  $$("#modalBox [data-close]").forEach(b=>b.onclick=()=>{SFX.click();closeModal()});
+  box.dataset.lock=lock?"1":"";
+}
+function closeModal(){ const root=$("#modalRoot"); root.classList.remove("open"); $("#modalBox").innerHTML=""; }
+function modalIsOpen(){ return $("#modalRoot").classList.contains("open"); }
+function openChoiceModal(title,body,opts){
+  let h=`<h3>${title}</h3><p style="margin:10px 0">${body}</p><div class="actions">`;
+  opts.forEach((o,i)=>{ h+=`<button class="btn ${i===0?"primary":"ghost"}" data-ch="${i}">${esc(o.label)}</button>`; });
+  h+=`</div>`;
+  openModal(h);
+  $$("#modalBox [data-ch]").forEach(b=>b.onclick=()=>{ SFX.click(); const o=opts[+b.dataset.ch]; closeModal(); o.fn(); });
+}
+/* ---------- negotiation (slider + typeable amount, single-fire) ---------- */
+function openNegotiation(off){
+  const suggested=Math.round(off.ask/10)*10;
+  const lo=Math.max(100,Math.round(suggested*0.4)), hi=Math.round(suggested*2);
+  openModal(`<h3>Negotiate: ${esc(off.title)}</h3>
+    <p style="margin:8px 0">${esc(off.brief)}</p>
+    <div class="tagrow">
+      ${persTag(off.pers)}
+      <span class="tag info">difficulty ${off.diff}</span>
+      <span class="tag">deadline ${off.days}d</span>
+      <span class="tag warn">pays net ${off.client.netDays}</span>
+      <span class="tag">${off.feats.length} features</span>
+    </div>
+    <div class="field">
+      <label>Your quote (their ballpark: about ${fmt$(suggested)})</label>
+      <input type="range" class="range" id="qRange" min="${lo}" max="${hi}" step="10" value="${suggested}">
+      <input type="number" id="qNum" min="0" step="10" value="${suggested}" style="margin-top:8px;font-size:20px;font-weight:800;width:180px">
+      <div class="hint">Type an exact amount or drag the slider. Communication level ${S.skills.comms} gives you a little leverage. Ask for too much and they walk.</div>
+    </div>
+    <div class="field">
+      <label><input type="checkbox" id="qDeposit" checked> Ask for a 30% deposit (protects against late payment, some clients refuse)</label>
+    </div>
+    <div class="actions"><button class="btn ghost" data-close>Walk away</button><button class="btn primary" id="qSend">Send quote</button></div>`);
+  const range=$("#qRange"), num=$("#qNum");
+  let syncing=false;
+  range.oninput=()=>{ if(syncing) return; syncing=true; num.value=range.value; syncing=false; };
+  num.oninput=()=>{ if(syncing) return; syncing=true; const v=clamp(parseInt(num.value,10)||0,lo,hi); range.value=v; syncing=false; };
+  const send=$("#qSend");
+  send.onclick=()=>{
+    if(send.dataset.sent==="1") return;   // guard: a quote can only be sent once
+    send.dataset.sent="1";
+    const amount=clamp(parseInt(num.value,10)||suggested,100,999999);
+    const wantDeposit=$("#qDeposit").checked;
+    const v=quoteVerdict(off,amount);
+    SFX.click();
+    if(v.kind==="decline"){
+      closeModal();
+      openChoiceModal("They walked",esc(off.client.name)+" says the budget doesn't come close. Silence follows. You get nothing this time.",[
+        {label:"Oh well",fn:()=>{ S.offers=S.offers.filter(o=>o.id!==off.id); log("Quote of "+fmt$(amount)+" got rejected outright.","warn"); save(); renderAll(); }},
+      ]);
+      return;
+    }
+    if(v.kind==="counter"){
+      openChoiceModal("Counter-offer",esc(off.client.name)+" winces at the number. \"We can do "+fmt$(v.counter)+". Final.\"",[
+        {label:"Take "+fmt$(v.counter),fn:()=>{ closeNegotiate(off,v.counter,wantDeposit); }},
+        {label:"Hold at "+fmt$(amount),fn:()=>{ S.offers=S.offers.filter(o=>o.id!==off.id); log("Held firm at "+fmt$(amount)+" and they moved on.","warn"); toast("They respected the spine but not the number. Offer gone.","warn"); save(); renderAll(); }},
+        {label:"Walk away",fn:()=>{ S.offers=S.offers.filter(o=>o.id!==off.id); log("Walked from negotiation at "+fmt$(amount),"warn"); save(); renderAll(); }},
+      ]);
+      return;
+    }
+    closeNegotiate(off,amount,wantDeposit);
+  };
+}
+function closeNegotiate(off,amount,wantDeposit){
+  const depositRefusers=["cheap","vip","ghosty"];
+  let depositOk=wantDeposit&&!depositRefusers.includes(off.pers);
+  if(wantDeposit&&!depositOk){
+    toast(off.client.name+" refuses deposits. Payment on delivery only.","warn");
+  }
+  const depositPaid=depositOk?Math.round(amount*0.3):0;
+  closeModal();
+  startProject(off,amount,depositOk,depositPaid);
+}
+/* ---------- bank app ---------- */
+function openBank(){
+  ensureBank();
+  const subRows=SUBSCRIPTIONS.map(sub=>{
+    const on=S.bank.subs.includes(sub.id);
+    return `<div class="subrow"><span style="flex:1"><span class="nm">${esc(sub.name)}</span> <span class="meta faint">${fmt$(sub.cost)}/mo · ${esc(sub.desc)}</span></span>
+      <button class="btn sm ${on?"danger":"primary"}" data-sub="${sub.id}">${on?"Cancel":"Subscribe"}</button></div>`;
+  }).join("");
+  const foodRows=Object.keys(FOOD_MODES).map(id=>{
+    const fm=FOOD_MODES[id];
+    return `<button class="lifebtn ${S.bank.foodMode===id?"":""}" data-food="${id}" style="${S.bank.foodMode===id?"border-color:var(--acc);color:var(--acc)":""}"><b>${esc(fm.label)}</b> <span class="c">${fmt$(fm.cost)}/wk</span><div class="d">${esc(fm.blurb)}</div></button>`;
+  }).join("");
+  const lifeRows=LIFE_BUYS.map(b=>`<button class="lifebtn" data-life="${b.id}">${esc(b.name)}<div class="c">${fmt$(b.cost)}</div><div class="d">${esc(b.note)}</div></button>`).join("");
+  const tx=S.ledger.slice(-14).reverse().map(l=>`<tr><td class="meta">day ${l.d}</td><td>${esc(l.note||l.kind)}</td><td class="num ${l.amount>=0?"green":"red"}">${fmt$(l.amount)}</td></tr>`).join("");
+  openModal(`<h3>Bank app</h3>
+    <div class="bankcard" style="margin:10px auto">
+      <div class="bc-top"><span>DAYLIGHT DEBIT</span><span>${esc(S.bank.exp)}</span></div>
+      <div class="bc-num">${esc(S.bank.cardNum)}</div>
+      <div class="bc-bot"><span>STEPHEN FEHON</span><span>cvv ${esc(S.bank.cvv||"***")}</span></div>
+    </div>
+    <p class="meta" style="text-align:center">Balance: <b class="${S.cash<0?"red":"green"}">${fmt$(S.cash)}</b> · the card works everywhere in this town and nowhere else.</p>
+    <h3 style="margin-top:16px">Subscriptions</h3>${subRows}
+    <h3 style="margin-top:16px">Groceries plan <span class="meta faint">(bills every Sunday)</span></h3>
+    <div class="lifegrid">${foodRows}</div>
+    <h3 style="margin-top:16px">Treat yourself <span class="meta faint">(debit card, instant)</span></h3>
+    <div class="lifegrid">${lifeRows}</div>
+    <h3 style="margin-top:16px">Recent transactions</h3>
+    <div class="scrollY" style="max-height:180px"><table>${tx}</table></div>
+    <div class="actions"><button class="btn" data-close>Close</button></div>`);
+  $$("#modalBox [data-sub]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.sub;
+    if(S.bank.subs.includes(id)){ S.bank.subs=S.bank.subs.filter(x=>x!==id); toast("Cancelled. One less drain.","good"); }
+    else { const sub=SUBSCRIPTIONS.find(x=>x.id===id); if(S.cash<sub.cost){ toast("Card declines. Not enough cash.","bad"); SFX.bad(); return; } S.bank.subs.push(id); toast("Subscribed to "+sub.name+".","good"); }
+    SFX.click(); save(); openBank(); renderAll();
+  });
+  $$("#modalBox [data-food]").forEach(b=>b.onclick=()=>{
+    S.bank.foodMode=b.dataset.food;
+    toast("Groceries plan set to "+FOOD_MODES[S.bank.foodMode].label+".","good");
+    SFX.click(); save(); openBank();
+  });
+  $$("#modalBox [data-life]").forEach(b=>b.onclick=()=>{ buyLife(b.dataset.life); openBank(); });
+}
+/* ---------- bugfix modal ---------- */
+function openFixModal(pid, bid){
+  const p=P(pid); if(!p) return;
+  const b=p.bugs.find(x=>x.id===bid); if(!b) return;
+  openModal(`<h3>Debugging</h3>
+    <div class="tagrow"><span class="tag bad">bug</span><span class="meta faint">${esc(p.offer.title)}</span></div>
+    <p class="mono" style="background:#070a11;border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0">${esc(b.q)}</p>
+    <p class="meta">What's the right move?</p>
+    ${b.opts.map((o,i)=>`<button class="chopt" data-opt="${i}">${esc(o.t)}</button>`).join("")}
+    <div class="actions"><button class="btn ghost" data-close>Step away from the desk</button></div>`);
+  $$("#modalBox [data-opt]").forEach(b2=>b2.onclick=()=>{
+    const i=+b2.dataset.opt;
+    if(b.opts[i].ok){ b2.classList.add("right"); setTimeout(()=>{closeModal();fixBug(pid,bid,i);},350); }
+    else{ b2.classList.add("wrong"); b2.disabled=true; fixBug(pid,bid,i); }
+  });
+}
+function openDeliverModal(pid){
+  const p=P(pid); if(!p) return;
+  const q=qualityNow(p);
+  const due=p.offer.createdDay+p.offer.days;
+  const onTime=S.day<=due+1;
+  openModal(`<h3>Ship it?</h3>
+    <p>Delivering <b>${esc(p.offer.title)}</b> to ${esc(p.client.company)}.</p>
+    <div class="tagrow">
+      <span class="tag ${q>=75?"good":q>=50?"warn":"bad"}">estimated quality ${q}/100</span>
+      <span class="tag ${onTime?"good":"bad"}">${onTime?"on time":(S.day-due)+" day(s) late"}</span>
+      ${p.bugs.length?`<span class="tag bad">${p.bugs.length} known bug(s)</span>`:`<span class="tag good">tests clean</span>`}
+    </div>
+    <p class="meta">You invoiced ${fmt$(p.quote-p.depositPaid)} (net ${p.client.netDays} days). The review lands a few days later. Quality drives it.</p>
+    <div class="actions"><button class="btn ghost" data-close>Not yet</button><button class="btn primary" id="doDeliver">Ship it</button></div>`);
+  $("#doDeliver").onclick=()=>{ closeModal(); deliverProject(pid); };
+}
+/* ---------- tabs / screens ---------- */
+let curTab="inbox";
+function switchTab(id){
+  curTab=id;
+  $$("#tabs .tab").forEach(t=>t.classList.toggle("on",t.dataset.tab===id));
+  ["inbox","work","clients","money","you"].forEach(x=>$("#tab-"+x).classList.toggle("hidden",x!==id));
+  SFX.click();
+}
+function showScreen(which){
+  $("#intro").classList.toggle("hidden",which!=="intro");
+  $("#game").classList.toggle("hidden",which!=="main");
+}
+/* ---------- intro code rain ---------- */
+function introRain(){
+  const cv=$("#introCanvas"), ctx=cv.getContext("2d");
+  let cols,drops;
+  function size(){ cv.width=innerWidth; cv.height=innerHeight; cols=Math.floor(cv.width/16); drops=Array(cols).fill(0).map(()=>rnd(-30,0)); }
+  size(); addEventListener("resize",size);
+  const glyphs="01{}<>=;/$fnconstletreturnif".split("");
+  let raf;
+  function frame(){
+    ctx.fillStyle="rgba(10,13,20,0.12)";
+    ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.font="13px ui-monospace,Menlo,Consolas,monospace";
+    for(let i=0;i<cols;i++){
+      const x=i*16, y=drops[i]*16;
+      ctx.fillStyle=chance(.06)?"rgba(143,123,255,.8)":"rgba(94,242,160,"+(chance(.5)?.55:.28)+")";
+      ctx.fillText(pick(glyphs),x,y);
+      drops[i]+=rnd(.2,.7);
+      if(y>cv.height&&chance(.03)) drops[i]=rnd(-20,0);
+    }
+    raf=requestAnimationFrame(frame);
+  }
+  frame();
+  return ()=>cancelAnimationFrame(raf);
+}
+/* ---------- boot ---------- */
+let stopRain=null;
+function init(){
+  stopRain=introRain();
+  if(hasSave()){
+    $("#btnContinue").classList.remove("hidden");
+    try{
+      const old=JSON.parse(localStorage.getItem(SAVE_KEY));
+      $("#introStats").textContent="save found: day "+old.day+" · "+fmt$(old.cash)+" · "+old.projectsDone+" project(s) shipped · rank "+RANKS[old.flags&&old.flags.rank||0].name;
+    }catch(e){}
+  }
+  $("#btnNew").onclick=()=>{ ac(); SFX.click(); if(hasSave()&&!confirm("Start over? Your current save will be erased.")) return; wipeSave(); S=freshState(); genOffer(true); genOffer(true); save(); startMain(); };
+  $("#btnContinue").onclick=()=>{ ac(); SFX.click(); if(load()) startMain(); else toast("Save was unreadable. Starting fresh.","bad"); };
+  $$("#tabs .tab").forEach(t=>t.onclick=()=>switchTab(t.dataset.tab));
+  $("#btnSleep").onclick=()=>{ SFX.click(); advanceDay(); };
+  $("#btnShop").onclick=()=>openShop();
+  $("#btnCoffee").onclick=()=>buyCoffee();
+  $("#btnDrink").onclick=()=>buyDrink();
+  $("#btnBankTop").onclick=()=>openBank();
+  $("#logo").onclick=()=>switchTab("inbox");
+  document.addEventListener("keydown",e=>{
+    if(!$("#game")||$("#game").classList.contains("hidden")) return;
+    if(e.key==="Escape"&&$("#modalBox").dataset.lock!=="1") closeModal();
+    if(modalIsOpen()) return;
+    if(e.target&&["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)) return;
+    const tabs=["inbox","work","clients","money","you"];
+    if(e.key>="1"&&e.key<="5") switchTab(tabs[+e.key-1]);
+    if(e.code==="Space"&&!e.repeat){ e.preventDefault(); advanceDay(); }
+  });
+}
+function startMain(){
+  showScreen("main");
+  if(stopRain){ stopRain(); stopRain=null; }
+  switchTab("inbox");
+  renderAll();
+  if(!S.welcomed){
+    S.welcomed=true;
+    openChoiceModal("Day one",
+      "You rented a room with a desk, a laptop, and "+fmt$(S.cash)+" to your name. Rent is "+fmt$(RENT)+" on the first of every month. Your inbox already has offers. Pick one, quote it, build it, ship it, invoice it. The money arrives late. It always arrives late.",
+      [{label:"Let's get to work",fn:()=>{}}]);
+    save();
+  }
+}
+document.addEventListener("DOMContentLoaded",init);
+
+</script>
+</body>
+</html>
